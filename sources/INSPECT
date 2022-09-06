@@ -1,12 +1,14 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED " 9-Aug-2022 08:56:54" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>sources>INSPECT.;12 119048 
+(FILECREATED " 4-Sep-2022 13:43:04" 
+{DSK}<Users>kaplan>Local>medley3.5>working-medley>sources>INSPECT.;19 121964 
 
-      :CHANGES-TO (FNS INSPECT/DATATYPE)
+      :CHANGES-TO (FNS DEFAULT.INSPECTW.TITLECOMMANDFN \ITEM.WINDOW.COPY.HANDLER 
+                       \INSPECT.COMPUTE.TITLE INSPECT INSPECTW.CREATE DEFAULT.INSPECTW.VALUECOMMANDFN
+                       )
 
-      :PREVIOUS-DATE "11-Oct-2021 14:04:22" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>sources>INSPECT.;11)
+      :PREVIOUS-DATE "25-Aug-2022 00:00:46" 
+{DSK}<Users>kaplan>Local>medley3.5>working-medley>sources>INSPECT.;14)
 
 
 (* ; "
@@ -99,10 +101,12 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
 
 (INSPECTW.CREATE
   [LAMBDA (DATUM PROPERTIES FETCHFN STOREFN PROPCOMMANDFN VALUECOMMANDFN TITLECOMMANDFN TITLE 
-                 SELECTIONFN WHERE PROPPRINTFN)          (* ; "Edited  5-Aug-87 09:52 by jop")
+                 SELECTIONFN WHERE PROPPRINTFN)              (* ; "Edited  3-Sep-2022 23:48 by rmk")
+                                                             (* ; "Edited  5-Aug-87 09:52 by jop")
 
     (* ;; "Creates a window with an item list made up of properties and values")
 
+    (DECLARE (USEDFREE TAG))
     (LET ((PROFILE (MAKE-INSPECTOR-PROFILE)))
          (WITH-INSPECTOR-ENV PROFILE
                 (PROG [WINDOW VALUE PROPMENU VALUEMENU VALUEMARGIN SELITEMS MAXVALUEWIDTH
@@ -111,22 +115,21 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
                                                ((OR (NULL PROPERTIES)
                                                     (LISTP PROPERTIES))
                                                 PROPERTIES)
-                                               (T            (* ; 
-                                                           "allow PROPERTIES to be a function")
+                                               (T            (* ; "allow PROPERTIES to be a function")
                                                   (APPLY* PROPERTIES DATUM]
-                      (SETQ VALUEMARGIN (\INSPECTW.VALUE.MARGIN
-                                         (COND
-                                            (PROPPRINTFN (for PROP in PROPERTIESLST
-                                                            collect (APPLY* PROPPRINTFN PROP 
-                                                                               DATUM)))
-                                            (T PROPERTIESLST))
-                                         IWFONT))
+                      (SETQ VALUEMARGIN (\INSPECTW.VALUE.MARGIN (COND
+                                                                   (PROPPRINTFN
+                                                                    (for PROP in PROPERTIESLST
+                                                                       collect (APPLY* PROPPRINTFN 
+                                                                                      PROP DATUM)))
+                                                                   (T PROPERTIESLST))
+                                               IWFONT))
                       (SETQ MAXVALUEWIDTH
                        (COND
                           (PROPERTIESLST (IMIN (IMAX (bind X for PROP in PROPERTIESLST
-                                                        largest (STRINGWIDTH (APPLY* FETCHFN 
-                                                                                        DATUM PROP)
-                                                                           IWFONT T)
+                                                        largest (STRINGWIDTH (APPLY* FETCHFN DATUM 
+                                                                                    PROP)
+                                                                       IWFONT T)
                                                         finally (RETURN $$EXTREME))
                                                      16)
                                                MaxInspectorPropertyValueWidth))
@@ -142,13 +145,18 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
                                           (\INSPECT.COMPUTE.TITLE TITLE DATUM)))
                       (DSPFONT IWFONT WINDOW)
                       (DSPRIGHTMARGIN 50000 WINDOW)          (* ; 
-                  "for now, can't handle multiple PROPCOMMANDFN output.  Put right margin way out.")
+                    "for now, can't handle multiple PROPCOMMANDFN output.  Put right margin way out.")
                       (WINDOWPROP WINDOW 'DATUM DATUM)       (* ; 
-                                                         "initialize the properties of the window.")
+                                                           "initialize the properties of the window.")
                       (WINDOWPROP WINDOW 'STOREFN STOREFN)
                       (WINDOWPROP WINDOW 'FETCHFN FETCHFN)
                       (WINDOWPROP WINDOW 'PROPCOMMANDFN PROPCOMMANDFN)
                       (WINDOWPROP WINDOW 'VALUECOMMANDFN VALUECOMMANDFN)
+                      (CL:WHEN TAG
+                          (SETQ TAG (CONCAT TAG ": "))
+                          (WINDOWPROP WINDOW 'INSPECTTAG TAG)
+                          [SETQ TITLE (CONCAT TAG (WINDOWPROP WINDOW 'TITLE]
+                          (WINDOWPROP WINDOW 'TITLE TITLE))
                       (WINDOWPROP WINDOW 'INSPECTWTITLE TITLE)
                       (WINDOWPROP WINDOW 'TITLECOMMANDFN TITLECOMMANDFN)
                       (WINDOWPROP WINDOW 'SELECTIONFN SELECTIONFN)
@@ -481,10 +489,10 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
                  TITLE BORDER NOOPENFLG])
 
 (DEFAULT.INSPECTW.PROPCOMMANDFN
-  [LAMBDA (PROPERTY DATUM INSPECTW)                          (* ; "Edited  1-Dec-96 20:16 by rmk:")
-                                                             (* ; "Edited 22-Jun-87 16:41 by jop")
+  [LAMBDA (PROPERTY DATUM INSPECTW)                          (* ; "Edited  1-Dec-96 20:16 by rmk:")
+                                                             (* ; "Edited 22-Jun-87 16:41 by jop")
 
-    (* ;; "allows the user to select a menu item to change the property in an inspect window.")
+    (* ;; "allows the user to select a menu item to change the property in an inspect window.")
 
     (SELECTQ [MENU (COND
                       ((type? MENU SetPropertyMenu)
@@ -505,8 +513,8 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
                                (CLEARBUF T T)
                                (printout T "Eval> ")
                                (SETQ NEWVALUE (CL:FUNCALL XCL:*EVAL-FUNCTION* (LISPXREAD T T)))
-                                                             (* ; 
-                                            "clear tty buffer because it sometimes has stuff left.")
+                                                             (* ; 
+                                              "clear tty buffer because it sometimes has stuff left.")
                                (CLEARBUF T T))
                            (REMOVEPROMPTWINDOW INSPECTW)
                            (RETURN (INSPECTW.REPLACE INSPECTW PROPERTY NEWVALUE])
@@ -514,7 +522,9 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
         NIL])
 
 (DEFAULT.INSPECTW.VALUECOMMANDFN
-  [LAMBDA (VALUE PROPERTY DATUM WINDOW)                  (* ; "Edited 28-Jan-93 16:50 by jds")
+  [LAMBDA (VALUE PROPERTY DATUM WINDOW)                      (* ; "Edited  2-Sep-2022 18:06 by rmk")
+                                                             (* ; "Edited 24-Aug-2022 23:38 by rmk")
+                                                             (* ; "Edited 28-Jan-93 16:50 by jds")
 
     (* ;; "allows the user to choose a way to inspect a value in a window")
 
@@ -530,8 +540,7 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
              (printout PROMPTWINDOW T "Can't Inspect " VALUE)
              (until (MOUSESTATE UP))
              (CLRPROMPT))
-        (LISTP                                               (* ; 
-                                                           "find out how to inspect the list.")
+        (LISTP                                               (* ; "find out how to inspect the list.")
                (INSPECT/LISTP VALUE))
         (SELECTQ [MENU (COND
                           ((type? MENU InspectMenu)
@@ -542,7 +551,9 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
             NIL])
 
 (DEFAULT.INSPECTW.TITLECOMMANDFN
-  [LAMBDA (INSPECTW DATUM)                               (* rrb "18-Apr-84 17:57")
+  [LAMBDA (INSPECTW DATUM)                                   (* ; "Edited  4-Sep-2022 13:42 by rmk")
+                                                             (* ; "Edited 25-Aug-2022 00:00 by rmk")
+                                                             (* rrb "18-Apr-84 17:57")
     (SELECTQ [MENU (COND
                       ((type? MENU ItemWCommandMenu)
                        ItemWCommandMenu)
@@ -557,14 +568,38 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
                                                                  (IT_selection
                                                                   'SETITTOSEL 
                                           "sets the variable IT to the item selected in this window."
-                                                                  ]
+                                                                  )
+                                                                 ("Add  tag" 'ADDTAG 
+                                                          "add a mnemonic tag to this window's title"
+                                                                        ]
         (REFETCH (INSPECTW.REDISPLAY INSPECTW))
         (SETIT (SETQ IT DATUM))
         (SETITTOSEL (COND
                        [(WINDOWPROP INSPECTW 'CURRENTITEM)
                         (SETQ IT (fetch (SELECTABLEITEM ITEMINFO) of (WINDOWPROP INSPECTW
-                                                                                    'CURRENTITEM]
+                                                                            'CURRENTITEM]
                        (T (PROMPTPRINT "No item has been selected from this window."))))
+        (ADDTAG [LET (POS TAG (OLDTAG (WINDOWPROP INSPECTW 'INSPECTTAG))
+                          (TITLE (WINDOWPROP INSPECTW 'TITLE))
+                          (PWINDOW (GETPROMPTWINDOW INSPECTW 1)))
+                     (RESETLST
+                         (RESETSAVE (TTYDISPLAYSTREAM PWINDOW))
+                         (RESETSAVE (TTY.PROCESS (THIS.PROCESS)))
+                         (CLEARBUF T T)
+                         (PRINTOUT T "Tag> ")
+                         (SETQ TAG (CL:READ-LINE T))
+                         (CLEARBUF T T)
+                         (REMOVEPROMPTWINDOW INSPECTW)
+                         (SETQ TAG (CL:IF (EQ 0 (NCHARS TAG))
+                                       NIL
+                                       (CONCAT TAG ": ")))
+                         (WINDOWPROP INSPECTW 'INSPECTTAG TAG)
+                                                             (* ; "Remove the old tag, if any")
+                         (CL:WHEN (AND OLDTAG (SETQ POS (STRPOS OLDTAG TITLE 1 NIL T T)))
+                             (SETQ TITLE (SUBSTRING TITLE POS)))
+                         (WINDOWPROP INSPECTW 'TITLE (CL:IF TAG
+                                                         (CONCAT TAG TITLE)
+                                                         TITLE)))])
         NIL])
 
 (\SELITEM.FROM.PROPERTY
@@ -576,26 +611,28 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
                          'PROPERTY)) do (RETURN SELITEM])
 
 (\INSPECT.COMPUTE.TITLE
-  [LAMBDA (TITLE DATUM WINDOW)                           (* ; "Edited 18-Mar-87 15:23 by jrb:")
+  [LAMBDA (TITLE DATUM WINDOW)                               (* ; "Edited  3-Sep-2022 23:46 by rmk")
+                                                             (* ; "Edited  2-Sep-2022 18:05 by rmk")
+                                                             (* ; "Edited 24-Aug-2022 23:35 by rmk")
+                                                             (* ; "Edited 18-Mar-87 15:23 by jrb:")
                                                              (* ; 
-                           "computes the title for an inspectw from its title field and its datum.")
-    (PROG (VALUE)
-          (RETURN (COND
-                     ((NULL TITLE)
-                      (CONCAT (LET ((*PRINT-LEVEL* 3)
-                                    (*PRINT-LENGTH* 4))
-                                   (CL:PRINC-TO-STRING DATUM))
-                             "  Inspector"))
-                     ((EQ TITLE 'DON'T)                      (* ; "no title")
-                      NIL)
-                     ((LITATOM TITLE)                        (* ; 
-                                                           "it is a function to compute the title.")
-                      (COND
-                         ((NEQ (SETQ VALUE (APPLY* TITLE DATUM WINDOW))
-                               'DON'T)
-                          VALUE)
-                         (T NIL)))
-                     (T TITLE])
+                             "computes the title for an inspectw from its title field and its datum.")
+    (LET (VALUE)
+         (COND
+            ((NULL TITLE)
+             (LET ((*PRINT-LEVEL* 3)
+                   (*PRINT-LENGTH* 4))
+                  (CL:PRINC-TO-STRING DATUM)))
+            ((EQ TITLE 'DON'T)                               (* ; "no title")
+             NIL)
+            ((LITATOM TITLE)                                 (* ; 
+                                                             "it is a function to compute the title.")
+             (COND
+                ((NEQ (SETQ VALUE (APPLY* TITLE DATUM WINDOW))
+                      'DON'T)
+                 VALUE)
+                (T NIL)))
+            (T TITLE])
 
 (LEVELEDFORM
   [LAMBDA (EXP CARLEV CDRLEV)                            (* ; "Edited  3-Feb-87 16:35 by jop")
@@ -672,7 +709,7 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
                 WINDOW])
 
 (\ITEM.WINDOW.BUTTON.HANDLER
-  [LAMBDA (WINDOW)                                       (* ; "Edited  3-Feb-87 16:45 by jop")
+  [LAMBDA (WINDOW)                                           (* ; "Edited  3-Feb-87 16:45 by jop")
 
     (* ;; "handles button events for item windows.  Basically calls left or middle button handler.")
 
@@ -962,7 +999,8 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
 (DEFINEQ
 
 (\ITEM.WINDOW.COPY.HANDLER
-  [LAMBDA (WINDOW)                                       (* ; "Edited  2-Feb-87 17:27 by jop")
+  [LAMBDA (WINDOW)                                           (* ; "Edited  4-Sep-2022 08:58 by rmk")
+                                                             (* ; "Edited  2-Feb-87 17:27 by jop")
 
     (* ;; "copy selects an ITEM from the window.  An ITEM is an instance of record SELECTABLEITEM.")
 
@@ -980,15 +1018,15 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
                         (\ITEMW.FLIPCOPY CURRENTITEM WINDOW)))
               (COND
                  ((SETQ CURRENTITEM NEWITEM)
-                  (\ITEMW.FLIPCOPY CURRENTITEM WINDOW]   (* ; 
-                                                       "wait for a button up or move out of region")
+                  (\ITEMW.FLIPCOPY CURRENTITEM WINDOW]       (* ; 
+                                                         "wait for a button up or move out of region")
       LP2 (BLOCK)
           (COND
              ((NOT (.COPYKEYDOWNP.))                         (* ; "Finished, copy selected item")
               [COND
                  (CURRENTITEM (\ITEMW.FLIPCOPY CURRENTITEM WINDOW)
-                        (BKSYSBUF.GENERAL (fetch (SELECTABLEITEM ITEMINFO) of CURRENTITEM
-                                                     ]
+                        (BKSYSBUF.GENERAL (fetch (SELECTABLEITEM ITEMINFO) of CURRENTITEM)))
+                 (T (BKSYSBUF.GENERAL (WINDOWPROP WINDOW 'DATUM]
               (RETURN))
              ((MOUSESTATE UP)                                (* ; "button up, no action")
               (GO LP2))
@@ -1059,48 +1097,57 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
 (DEFINEQ
 
 (INSPECT
-  [LAMBDA (ITEM ASTYPE WHERE)                                (* ; "Edited  1-Dec-96 21:09 by rmk:")
-                                                             (* ; "Edited  2-Feb-87 17:09 by jop")
+  [LAMBDA (ITEM ASTYPE WHERE TAG)
 
-    (* ;; "sets up a window that allows inspection.")
+    (* ;; "Edited  3-Sep-2022 23:32 by rmk")
 
-    (DECLARE (SPECVARS WHERE))
+    (* ;; "Edited  2-Sep-2022 17:59 by rmk")
+
+    (* ;; 
+    "Edited 24-Aug-2022 23:32 by rmk:  Added optional TAG as a mnemonic packed onto window title")
+
+    (* ;; "Edited  1-Dec-96 21:09 by rmk:")
+
+    (* ;; "Edited  2-Feb-87 17:09 by jop")
+
+    (* ;; "sets up a window that allows inspection.")
+
+    (DECLARE (SPECVARS WHERE TAG))
     (LET ((ITEMTYPE (TYPENAME ITEM))
           IWINDOW INSPECTINFO)
          (CL:SETQ IWINDOW (COND
-                             (ASTYPE                         (* ; 
-   "if ASTYPE is given, always inspect it as that type.  This provides a way of overriding macros.")
+                             (ASTYPE                         (* ; 
+     "if ASTYPE is given, always inspect it as that type.  This provides a way of overriding macros.")
                                     (INSPECT/DATATYPE ITEM ASTYPE WHERE))
                              [(SETQ INSPECTINFO (for IMACRO in INSPECTMACROS
                                                    when (COND
-                                                               [(LISTP (CAR IMACRO))
-                                                                (COND
-                                                                   ((EQ (CAAR IMACRO)
-                                                                        'FUNCTION)
-                                                                    (APPLY* (CADAR IMACRO)
-                                                                           ITEM))
-                                                                   (T (ERROR 
+                                                           [(LISTP (CAR IMACRO))
+                                                            (COND
+                                                               ((EQ (CAAR IMACRO)
+                                                                    'FUNCTION)
+                                                                (APPLY* (CADAR IMACRO)
+                                                                       ITEM))
+                                                               (T (ERROR 
                                                                "ERROR in INSPECTMACROS specification"
-                                                                             IMACRO]
-                                                               (T (EQ (CAR IMACRO)
-                                                                      ITEMTYPE)))
+                                                                         IMACRO]
+                                                           (T (EQ (CAR IMACRO)
+                                                                  ITEMTYPE)))
                                                    do (RETURN IMACRO)))
                               (COND
-                                 ((LISTP (CDR INSPECTINFO))  (* ; 
-                                    "inspect information is a list of arguments to INSPECTW.CREATE")
+                                 ((LISTP (CDR INSPECTINFO))  (* ; 
+                                      "inspect information is a list of arguments to INSPECTW.CREATE")
                                   (\APPLYINSPECTMACRO ITEM (CDR INSPECTINFO)
-                                         WHERE))
-                                 (T                          (* ; 
-                                         "if inspect information is an atom, apply it to the ITEM.")
+                                         WHERE TAG))
+                                 (T                          (* ; 
+                                           "if inspect information is an atom, apply it to the ITEM.")
                                     (APPLY* (CDR INSPECTINFO)
                                            ITEM
                                            (CAR INSPECTINFO)
                                            WHERE]
                              [ITEM (SELECTQ ITEMTYPE
-                                       (LITATOM (INSPECT/ATOM ITEM NIL WHERE))
-                                       (LISTP                (* ; 
-                                                           "find out how to inspect the list.")
-                                              (INSPECT/LISTP ITEM WHERE))
+                                       (LITATOM (INSPECT/ATOM ITEM NIL WHERE TAG))
+                                       (LISTP                (* ; "find out how to inspect the list.")
+                                              (INSPECT/LISTP ITEM WHERE TAG))
                                        (ARRAYP (INSPECT/ARRAY ITEM NIL WHERE))
                                        (HARRAYP (INSPECT/HARRAYP ITEM WHERE))
                                        (BITMAP (INSPECT/BITMAP ITEM WHERE))
@@ -1110,13 +1157,13 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
                                             (COND
                                                ((fetch DTDHUNKP of DTD)
                                                 (INSPECT/HUNK ITEM WHERE (fetch DTDGCTYPE
-                                                                                of DTD)
+                                                                            of DTD)
                                                        (fetch DTDSIZE of DTD)))
                                                (T (INSPECT/DATATYPE ITEM NIL WHERE]
                              (T (printout PROMPTWINDOW T "Can't Inspect NIL.")
                                 NIL)))
-         (CL:WHEN (WINDOWP IWINDOW)                          (* ; 
-                "Mark it as an inspect window, so that utilities such as WDWHACKS can recognize it")
+         (CL:WHEN (WINDOWP IWINDOW)                          (* ; 
+                  "Mark it as an inspect window, so that utilities such as WDWHACKS can recognize it")
              (WINDOWPROP IWINDOW 'INSPECTWINDOW T))])
 
 (\APPLYINSPECTMACRO
@@ -2143,40 +2190,40 @@ Copyright (c) 1982-1987, 1990-1991, 1993, 1995, 1999, 2018, 2021 by Venue & Xero
 (PUTPROPS INSPECT COPYRIGHT ("Venue & Xerox Corporation" 1982 1983 1984 1985 1986 1987 1990 1991 1993 
 1995 1999 2018 2021))
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (6989 42717 (INSPECTW.CREATE 6999 . 11754) (INSPECTW.REPAINTFN 11756 . 17292) (
-INSPECTW.REDISPLAY 17294 . 26166) (\INSPECTW.VALUE.MARGIN 26168 . 26571) (INSPECTW.REPLACE 26573 . 
-27281) (INSPECTW.SELECTITEM 27283 . 28273) (\INSPECTW.REDISPLAYPROP 28275 . 30705) (INSPECTW.FETCH 
-30707 . 31130) (INSPECTW.PROPERTIES 31132 . 31773) (DECODE.WINDOW.ARG 31775 . 33503) (
-DEFAULT.INSPECTW.PROPCOMMANDFN 33505 . 35523) (DEFAULT.INSPECTW.VALUECOMMANDFN 35525 . 36783) (
-DEFAULT.INSPECTW.TITLECOMMANDFN 36785 . 38475) (\SELITEM.FROM.PROPERTY 38477 . 38919) (
-\INSPECT.COMPUTE.TITLE 38921 . 40047) (LEVELEDFORM 40049 . 40768) (MAKEWITHINREGION 40770 . 42715)) (
-42718 60019 (ITEMW.REPAINTFN 42728 . 43948) (\ITEM.WINDOW.BUTTON.HANDLER 43950 . 44365) (
-\ITEM.WINDOW.SELECTION.HANDLER 44367 . 47034) (\INSPECTW.COMMAND.HANDLER 47036 . 51037) (
-ITEM.WINDOW.SET.STACK.ARG 51039 . 53243) (REPLACESTKARG 53245 . 54344) (IN/ITEM? 54346 . 55228) (
-\ITEMW.DESELECTITEM 55230 . 55494) (\ITEMW.SELECTITEM 55496 . 55758) (\ITEMW.CLEARSELECTION 55760 . 
-56115) (\ITEMW.FLIPITEM 56117 . 56590) (PRINTANDBOX 56592 . 59101) (PRINTATBOX 59103 . 59620) (
-ITEMOFPROPERTYVALUE 59622 . 60017)) (60020 63625 (\ITEM.WINDOW.COPY.HANDLER 60030 . 61751) (
-\ITEMW.FLIPCOPY 61753 . 62212) (BKSYSBUF.GENERAL 62214 . 63623)) (64017 86547 (INSPECT 64027 . 68290) 
-(\APPLYINSPECTMACRO 68292 . 69274) (INSPECT/BITMAP 69276 . 70311) (INSPECT/DATATYPE 70313 . 73611) (
-INSPECTABLEFIELDNAMES 73613 . 74134) (REMOVEDUPS 74136 . 74341) (INSPECT/ARRAY 74343 . 75380) (
-INSPECT/TOP/LEVEL/LIST 75382 . 76341) (INSPECT/PROPLIST 76343 . 77318) (NONSYSPROPNAMES 77320 . 77616)
- (INSPECT/LISTP 77618 . 77940) (ALISTP 77942 . 78151) (PROPLISTP 78153 . 78793) (INSPECT/ALIST 78795
- . 79150) (ASSOCGET 79152 . 79363) (/ASSOCPUT 79365 . 79630) (INSPECT/PLIST 79632 . 79995) (
-INSPECT/TYPERECORD 79997 . 80237) (INSPECT/AS/RECORD 80239 . 81363) (SELECT.LIST.INSPECTOR 81365 . 
-83410) (STANDARDEDITE 83412 . 83695) (NTHTOPLEVELELT 83697 . 84013) (SETNTHTOPLEVELELT 84015 . 84775) 
-(DEDITE 84777 . 84984) (FINDRECDECL 84986 . 85569) (FINDSYSRECDECL 85571 . 85972) (
-MAKE-INSPECTOR-PROFILE 85974 . 86359) (CONFIRM-SET 86361 . 86545)) (88313 96402 (INSPECT/ATOM 88323 . 
-92303) (SELECT.ATOM.ASPECT 92305 . 93449) (INSPECT/AS/FUNCTION 93451 . 95737) (SELECT.FNS.EDITOR 95739
- . 96400)) (96443 101862 (INSPECTCODE 96453 . 97599) (\TEDIT.INSPECTCODE 97601 . 99579) (
-\INSPECT/CODE/RESHAPEFN 99581 . 101120) (\INSPECT/CODE/REPAINTFN 101122 . 101860)) (101900 103385 (
-INSPECT/HARRAYP 101910 . 102537) (HARRAYKEYS 102539 . 102918) (INSPECTW.GETHASH 102920 . 103147) (
-INSPECTW.PUTHASH 103149 . 103383)) (103434 109643 (RDTBL\NONOTHERCODES 103444 . 104464) (GETSYNTAXPROP
- 104466 . 105964) (SETSYNTAXPROP 105966 . 107693) (GETTTBLPROP 107695 . 108613) (SETTTBLPROP 108615 . 
-109641)) (110122 118505 (INSPECT/AS/BLOCKRECORD 110132 . 111015) (INSPECT/TYPELESS 111017 . 112263) (
-LIST-ALL-BLOCKRECORDS 112265 . 112540) (INSPECT/HUNK 112542 . 115148) (\INSPECT.DATATYPE.RAW.FETCH 
-115150 . 115476) (\INSPECT.FETCH.8 115478 . 115627) (\INSPECT.FETCH.32 115629 . 115800) (
-\INSPECT.FETCH.CHAR 115802 . 115965) (\INSPECT.FETCH.FATCHAR 115967 . 116129) (\INSPECT.FETCH.PTR 
-116131 . 116302) (\INSPECT.STORE.8 116304 . 116610) (\INSPECT.STORE.16 116612 . 116912) (
-\INSPECT.STORE.32 116914 . 117349) (\INSPECT.STORE.CHAR 117351 . 117677) (\INSPECT.STORE.FATCHAR 
-117679 . 118001) (\INSPECT.STORE.PTR 118003 . 118350) (INSPECT/MAKE/CCODEP 118352 . 118503)))))
+  (FILEMAP (NIL (7157 45434 (INSPECTW.CREATE 7167 . 12386) (INSPECTW.REPAINTFN 12388 . 17924) (
+INSPECTW.REDISPLAY 17926 . 26798) (\INSPECTW.VALUE.MARGIN 26800 . 27203) (INSPECTW.REPLACE 27205 . 
+27913) (INSPECTW.SELECTITEM 27915 . 28905) (\INSPECTW.REDISPLAYPROP 28907 . 31337) (INSPECTW.FETCH 
+31339 . 31762) (INSPECTW.PROPERTIES 31764 . 32405) (DECODE.WINDOW.ARG 32407 . 34135) (
+DEFAULT.INSPECTW.PROPCOMMANDFN 34137 . 36165) (DEFAULT.INSPECTW.VALUECOMMANDFN 36167 . 37583) (
+DEFAULT.INSPECTW.TITLECOMMANDFN 37585 . 41034) (\SELITEM.FROM.PROPERTY 41036 . 41478) (
+\INSPECT.COMPUTE.TITLE 41480 . 42764) (LEVELEDFORM 42766 . 43485) (MAKEWITHINREGION 43487 . 45432)) (
+45435 62740 (ITEMW.REPAINTFN 45445 . 46665) (\ITEM.WINDOW.BUTTON.HANDLER 46667 . 47086) (
+\ITEM.WINDOW.SELECTION.HANDLER 47088 . 49755) (\INSPECTW.COMMAND.HANDLER 49757 . 53758) (
+ITEM.WINDOW.SET.STACK.ARG 53760 . 55964) (REPLACESTKARG 55966 . 57065) (IN/ITEM? 57067 . 57949) (
+\ITEMW.DESELECTITEM 57951 . 58215) (\ITEMW.SELECTITEM 58217 . 58479) (\ITEMW.CLEARSELECTION 58481 . 
+58836) (\ITEMW.FLIPITEM 58838 . 59311) (PRINTANDBOX 59313 . 61822) (PRINTATBOX 61824 . 62341) (
+ITEMOFPROPERTYVALUE 62343 . 62738)) (62741 66482 (\ITEM.WINDOW.COPY.HANDLER 62751 . 64608) (
+\ITEMW.FLIPCOPY 64610 . 65069) (BKSYSBUF.GENERAL 65071 . 66480)) (66874 89463 (INSPECT 66884 . 71206) 
+(\APPLYINSPECTMACRO 71208 . 72190) (INSPECT/BITMAP 72192 . 73227) (INSPECT/DATATYPE 73229 . 76527) (
+INSPECTABLEFIELDNAMES 76529 . 77050) (REMOVEDUPS 77052 . 77257) (INSPECT/ARRAY 77259 . 78296) (
+INSPECT/TOP/LEVEL/LIST 78298 . 79257) (INSPECT/PROPLIST 79259 . 80234) (NONSYSPROPNAMES 80236 . 80532)
+ (INSPECT/LISTP 80534 . 80856) (ALISTP 80858 . 81067) (PROPLISTP 81069 . 81709) (INSPECT/ALIST 81711
+ . 82066) (ASSOCGET 82068 . 82279) (/ASSOCPUT 82281 . 82546) (INSPECT/PLIST 82548 . 82911) (
+INSPECT/TYPERECORD 82913 . 83153) (INSPECT/AS/RECORD 83155 . 84279) (SELECT.LIST.INSPECTOR 84281 . 
+86326) (STANDARDEDITE 86328 . 86611) (NTHTOPLEVELELT 86613 . 86929) (SETNTHTOPLEVELELT 86931 . 87691) 
+(DEDITE 87693 . 87900) (FINDRECDECL 87902 . 88485) (FINDSYSRECDECL 88487 . 88888) (
+MAKE-INSPECTOR-PROFILE 88890 . 89275) (CONFIRM-SET 89277 . 89461)) (91229 99318 (INSPECT/ATOM 91239 . 
+95219) (SELECT.ATOM.ASPECT 95221 . 96365) (INSPECT/AS/FUNCTION 96367 . 98653) (SELECT.FNS.EDITOR 98655
+ . 99316)) (99359 104778 (INSPECTCODE 99369 . 100515) (\TEDIT.INSPECTCODE 100517 . 102495) (
+\INSPECT/CODE/RESHAPEFN 102497 . 104036) (\INSPECT/CODE/REPAINTFN 104038 . 104776)) (104816 106301 (
+INSPECT/HARRAYP 104826 . 105453) (HARRAYKEYS 105455 . 105834) (INSPECTW.GETHASH 105836 . 106063) (
+INSPECTW.PUTHASH 106065 . 106299)) (106350 112559 (RDTBL\NONOTHERCODES 106360 . 107380) (GETSYNTAXPROP
+ 107382 . 108880) (SETSYNTAXPROP 108882 . 110609) (GETTTBLPROP 110611 . 111529) (SETTTBLPROP 111531 . 
+112557)) (113038 121421 (INSPECT/AS/BLOCKRECORD 113048 . 113931) (INSPECT/TYPELESS 113933 . 115179) (
+LIST-ALL-BLOCKRECORDS 115181 . 115456) (INSPECT/HUNK 115458 . 118064) (\INSPECT.DATATYPE.RAW.FETCH 
+118066 . 118392) (\INSPECT.FETCH.8 118394 . 118543) (\INSPECT.FETCH.32 118545 . 118716) (
+\INSPECT.FETCH.CHAR 118718 . 118881) (\INSPECT.FETCH.FATCHAR 118883 . 119045) (\INSPECT.FETCH.PTR 
+119047 . 119218) (\INSPECT.STORE.8 119220 . 119526) (\INSPECT.STORE.16 119528 . 119828) (
+\INSPECT.STORE.32 119830 . 120265) (\INSPECT.STORE.CHAR 120267 . 120593) (\INSPECT.STORE.FATCHAR 
+120595 . 120917) (\INSPECT.STORE.PTR 120919 . 121266) (INSPECT/MAKE/CCODEP 121268 . 121419)))))
 STOP
