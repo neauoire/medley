@@ -1,20 +1,18 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED "14-Jul-2022 16:55:47" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-FNKEYS.;1 29919  
+(FILECREATED "13-Sep-2022 12:37:21" 
+{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-FNKEYS.;6 29582  
 
-      :PREVIOUS-DATE "14-Jul-2022 11:08:01" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>library>newtedit>TEDIT-FNKEYS.;2)
+      :CHANGES-TO (VARS TEDIT-FNKEYSCOMS)
+
+      :PREVIOUS-DATE " 5-Sep-2022 22:15:17" 
+{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-FNKEYS.;5)
 
 
 (PRETTYCOMPRINT TEDIT-FNKEYSCOMS)
 
 (RPAQQ TEDIT-FNKEYSCOMS
-       ((FILES TEDIT-DCL)
-        (DECLARE%: EVAL@COMPILE DONTCOPY (CONSTANTS (\SCRATCHLEN 64))
-               (FILES (LOADCOMP)
-                      TEDIT-DCL))
-        (COMS 
+       ((COMS 
               (* ;; "Functions that actually implement the commands for the function keys:")
 
               (FNS \TEDIT.BOLD.SEL.OFF \TEDIT.BOLD.SEL.ON \TEDIT.CENTER.SEL \TEDIT.CENTER.SEL.REV 
@@ -87,21 +85,6 @@
                                                              (* ; 
                                                     "Changed by yabu.fx, for SUNLOADUP without DWIM.")
         ))
-
-(FILESLOAD TEDIT-DCL)
-(DECLARE%: EVAL@COMPILE DONTCOPY 
-(DECLARE%: EVAL@COMPILE 
-
-(RPAQQ \SCRATCHLEN 64)
-
-
-(CONSTANTS (\SCRATCHLEN 64))
-)
-
-
-(FILESLOAD (LOADCOMP)
-       TEDIT-DCL)
-)
 
 
 
@@ -186,14 +169,15 @@
           (SETQ TEDIT.DEFAULT.CHARLOOKS (\TEDIT.PARSE.CHARLOOKS.LIST LOOKS])
 
 (\TEDIT.FIND
-  [LAMBDA (TEXTSTREAM TEXTOBJ SEL AGAIN)                    (* ; "Edited  6-May-2018 17:14 by rmk:")
+  [LAMBDA (TEXTSTREAM TEXTOBJ SEL AGAIN)                     (* ; "Edited  5-Sep-2022 22:15 by rmk")
+                                                             (* ; "Edited 13-Aug-2022 23:36 by rmk")
+                                                            (* ; "Edited  6-May-2018 17:14 by rmk:")
                                                              (* ; "Edited 30-May-91 21:05 by jds")
-                                                             (* just calls the normal tedit.find 
-                                                             starting at the right of the current 
-                                                             selection)
+                                                             (* ; 
+                    "just calls the normal tedit.find starting at the right of the current selection")
     (PROG (TARGET (TEXTOBJ (TEXTOBJ TEXTSTREAM))
-                 SEL CH W)                                   (* Case sensitive search, with * and 
-                                                             %# wildcards)
+                 SEL CH W)                                   (* ; 
+                                                      "Case sensitive search, with * and # wildcards")
           [SETQ W (CAR (MKLIST (fetch (TEXTOBJ \WINDOW) of TEXTOBJ]
           (CL:WHEN AGAIN
               (SETQ TARGET (WINDOWPROP W 'TEDIT.LAST.FIND.STRING)))
@@ -201,35 +185,35 @@
               [SETQ TARGET (TEDIT.GETINPUT TEXTOBJ "Text to find: " (WINDOWPROP W 
                                                                            'TEDIT.LAST.FIND.STRING)
                                   (CHARCODE (EOL LF ESC])
-          [COND
-             (TARGET (SETQ SEL (fetch (TEXTOBJ SEL) of TEXTOBJ))
-                    (\SHOWSEL SEL NIL NIL)
-                    (TEDIT.PROMPTPRINT TEXTOBJ "Searching..." T)
-                    (SETQ CH (TEDIT.FIND TEXTOBJ (MKSTRING TARGET)
-                                    NIL NIL T))
-                    (COND
-                       (CH                                   (* We found the target text.)
-                           (TEDIT.PROMPTPRINT TEXTOBJ "Done.")
-                           (replace (SELECTION CH#) of SEL with (CAR CH))
-                                                             (* Set up SELECTION to be the found 
-                                                             text)
-                           (replace (SELECTION CHLIM) of SEL with (ADD1 (CADR CH)))
-                           [replace (SELECTION DCH) of SEL with (ADD1 (IDIFFERENCE (CADR CH)
-                                                                             (CAR CH]
-                           (replace (SELECTION POINT) of SEL with 'RIGHT)
-                           (replace (TEXTOBJ CARETLOOKS) of TEXTOBJ with (\TEDIT.GET.INSERT.CHARLOOKS
-                                                                          TEXTOBJ SEL))
-                           (TEDIT.RESET.EXTEND.PENDING.DELETE SEL)
-                                                             (* And never pending a deletion.)
-                           (\FIXSEL SEL TEXTOBJ)
-                           (TEDIT.NORMALIZECARET TEXTOBJ)
-                           (\SHOWSEL SEL NIL T)
-                           (WINDOWPROP W 'TEDIT.LAST.FIND.STRING TARGET)
-                                                             (* And get it into the window)
-                           )
-                       (T (TEDIT.PROMPTPRINT TEXTOBJ "(not found)")
-                          (\SHOWSEL SEL NIL T]
-          (replace (TEXTOBJ \INSERTNEXTCH) of TEXTOBJ with -1])
+          (CL:WHEN TARGET
+              (SETQ SEL (fetch (TEXTOBJ SEL) of TEXTOBJ))
+              (\SHOWSEL SEL NIL NIL)
+              (TEDIT.PROMPTPRINT TEXTOBJ "Searching..." T)
+              (SETQ CH (TEDIT.FIND TEXTOBJ (MKSTRING TARGET)
+                              NIL NIL T))
+              (COND
+                 (CH                                         (* ; "We found the target text.")
+                     (TEDIT.PROMPTPRINT TEXTOBJ "Done.")
+                     (replace (SELECTION CH#) of SEL with (CAR CH))
+                                                             (* ; 
+                                                             "Set up SELECTION to be the found text")
+                     (replace (SELECTION CHLIM) of SEL with (ADD1 (CADR CH)))
+                     [replace (SELECTION DCH) of SEL with (ADD1 (IDIFFERENCE (CADR CH)
+                                                                       (CAR CH]
+                     (replace (SELECTION POINT) of SEL with 'RIGHT)
+                     (replace (TEXTOBJ CARETLOOKS) of TEXTOBJ with (\TEDIT.GET.INSERT.CHARLOOKS
+                                                                    TEXTOBJ SEL))
+                     (TEDIT.RESET.EXTEND.PENDING.DELETE SEL) (* ; "And never pending a deletion.")
+                     (\FIXSEL SEL TEXTOBJ)
+                     (TEDIT.NORMALIZECARET TEXTOBJ)
+                     (\SHOWSEL SEL NIL T)                    (* ; "And get it into the window")
+                     (WINDOWPROP W 'TEDIT.LAST.FIND.STRING TARGET))
+                 (T (TEDIT.PROMPTPRINT TEXTOBJ "(not found)")
+                    (\SHOWSEL SEL NIL T))))
+
+     (* ;; "THIS MAY NOT BE NECESSARY OR HELPFUL--WHY SMASH THE HINT?  WAS THE INSERTPC")
+
+          (freplace (TEXTOBJ HINTPC) of TEXTOBJ with NIL])
 
 (\TEDIT.FINDAGAIN
   [LAMBDA (TEXTSTREAM TEXTOBJ SEL)                          (* ; "Edited  6-May-2018 17:12 by rmk:")
@@ -615,20 +599,20 @@
 (* ; "Changed by yabu.fx, for SUNLOADUP without DWIM.")
 
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (5737 18485 (\TEDIT.BOLD.SEL.OFF 5747 . 6085) (\TEDIT.BOLD.SEL.ON 6087 . 6415) (
-\TEDIT.CENTER.SEL 6417 . 7458) (\TEDIT.CENTER.SEL.REV 7460 . 8526) (\TEDIT.DEFAULTS.CARET 8528 . 8806)
- (\TEDIT.DEFAULTSSEL 8808 . 9131) (\TEDIT.SETDEFAULT.FROM.SEL 9133 . 9565) (\TEDIT.FIND 9567 . 12789) 
-(\TEDIT.FINDAGAIN 12791 . 12969) (\TEDIT.ITALIC.SEL.OFF 12971 . 13223) (\TEDIT.ITALIC.SEL.ON 13225 . 
-13418) (\TEDIT.LARGERSEL 13420 . 13708) (\TEDIT.LCASE.SEL 13710 . 14416) (\TEDIT.SHOWCARETLOOKS 14418
- . 15994) (\TEDIT.SMALLERSEL 15996 . 16287) (\TEDIT.SUBSCRIPTSEL 16289 . 16492) (\TEDIT.SUPERSCRIPTSEL
- 16494 . 16698) (\TEDIT.UCASE.SEL 16700 . 17462) (\TEDIT.UNDERLINE.SEL.OFF 17464 . 17662) (
-\TEDIT.UNDERLINE.SEL.ON 17664 . 17860) (\TEDIT.STRIKEOUT.SEL.ON 17862 . 18058) (
-\TEDIT.STRIKEOUT.SEL.OFF 18060 . 18258) (\TEDIT.SELECT.ALL 18260 . 18483)) (18557 24045 (
-\TEDIT.BOLD.CARET.OFF 18567 . 19019) (\TEDIT.BOLD.CARET.ON 19021 . 19470) (\TEDIT.ITALIC.CARET.OFF 
-19472 . 19926) (\TEDIT.ITALIC.CARET.ON 19928 . 20380) (\TEDIT.LARGER.CARET 20382 . 20834) (
-\TEDIT.SMALLER.CARET 20836 . 21290) (\TEDIT.SUBSCRIPT.CARET 21292 . 21750) (\TEDIT.SUPERSCRIPT.CARET 
-21752 . 22211) (\TEDIT.UNDERLINE.CARET.OFF 22213 . 22670) (\TEDIT.UNDERLINE.CARET.ON 22672 . 23127) (
-\TEDIT.STRIKEOUT.CARET.OFF 23129 . 23586) (\TEDIT.STRIKEOUT.CARET.ON 23588 . 24043)) (24114 27576 (
-\SEL.LIMIT 24124 . 24568) (\SEL.LINEDESC 24570 . 25174) (\TK.DESCRIBEFONT 25176 . 25866) (
-\PARAS.IN.SEL 25868 . 27574)))))
+  (FILEMAP (NIL (5427 18148 (\TEDIT.BOLD.SEL.OFF 5437 . 5775) (\TEDIT.BOLD.SEL.ON 5777 . 6105) (
+\TEDIT.CENTER.SEL 6107 . 7148) (\TEDIT.CENTER.SEL.REV 7150 . 8216) (\TEDIT.DEFAULTS.CARET 8218 . 8496)
+ (\TEDIT.DEFAULTSSEL 8498 . 8821) (\TEDIT.SETDEFAULT.FROM.SEL 8823 . 9255) (\TEDIT.FIND 9257 . 12452) 
+(\TEDIT.FINDAGAIN 12454 . 12632) (\TEDIT.ITALIC.SEL.OFF 12634 . 12886) (\TEDIT.ITALIC.SEL.ON 12888 . 
+13081) (\TEDIT.LARGERSEL 13083 . 13371) (\TEDIT.LCASE.SEL 13373 . 14079) (\TEDIT.SHOWCARETLOOKS 14081
+ . 15657) (\TEDIT.SMALLERSEL 15659 . 15950) (\TEDIT.SUBSCRIPTSEL 15952 . 16155) (\TEDIT.SUPERSCRIPTSEL
+ 16157 . 16361) (\TEDIT.UCASE.SEL 16363 . 17125) (\TEDIT.UNDERLINE.SEL.OFF 17127 . 17325) (
+\TEDIT.UNDERLINE.SEL.ON 17327 . 17523) (\TEDIT.STRIKEOUT.SEL.ON 17525 . 17721) (
+\TEDIT.STRIKEOUT.SEL.OFF 17723 . 17921) (\TEDIT.SELECT.ALL 17923 . 18146)) (18220 23708 (
+\TEDIT.BOLD.CARET.OFF 18230 . 18682) (\TEDIT.BOLD.CARET.ON 18684 . 19133) (\TEDIT.ITALIC.CARET.OFF 
+19135 . 19589) (\TEDIT.ITALIC.CARET.ON 19591 . 20043) (\TEDIT.LARGER.CARET 20045 . 20497) (
+\TEDIT.SMALLER.CARET 20499 . 20953) (\TEDIT.SUBSCRIPT.CARET 20955 . 21413) (\TEDIT.SUPERSCRIPT.CARET 
+21415 . 21874) (\TEDIT.UNDERLINE.CARET.OFF 21876 . 22333) (\TEDIT.UNDERLINE.CARET.ON 22335 . 22790) (
+\TEDIT.STRIKEOUT.CARET.OFF 22792 . 23249) (\TEDIT.STRIKEOUT.CARET.ON 23251 . 23706)) (23777 27239 (
+\SEL.LIMIT 23787 . 24231) (\SEL.LINEDESC 24233 . 24837) (\TK.DESCRIBEFONT 24839 . 25529) (
+\PARAS.IN.SEL 25531 . 27237)))))
 STOP

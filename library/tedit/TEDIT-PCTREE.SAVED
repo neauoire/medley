@@ -1,0 +1,742 @@
+(DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
+
+(FILECREATED "16-Aug-2022 16:09:34" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-PCTREE.;26 38944  
+
+      :CHANGES-TO (FNS \SPLITTREE \LASTNODE \FIRSTNODE \DELETETREE \MATCHPCS \GET-BTREE-DLEN 
+                       \INSERTTREE \TEDIT.SET-TOTLEN)
+                  (VARS TEDIT-PCTREECOMS)
+                  (MACROS \PREVSLOT \LASTSLOT \NTHBTSLOT \NTHSLOT \NEXTSLOT)
+                  (I.S.OPRS inslots inbtnode)
+                  (RECORDS BTSLOT)
+
+      :PREVIOUS-DATE "14-Aug-2022 18:05:06" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-PCTREE.;12)
+
+
+(PRETTYCOMPRINT TEDIT-PCTREECOMS)
+
+(RPAQQ TEDIT-PCTREECOMS
+       (
+        (* ;; "Balanced tree PIECE TABLE supporting functions")
+
+        (FILES TEDIT-DCL)
+        (DECLARE%: EVAL@COMPILE DONTCOPY 
+
+               (* ;; "\WORDSINBTREEMAIN = # of words in the child-pointers & offsets section of the node -- everything before SPARE5 (the overflow place).")
+
+               
+               (* ;; 
+       "\BTREEMAXCOUNT = number of children in a full node = maximum value for a node's COUNT field.")
+
+               
+               (* ;; "\BTREELASTREALOFFSET = offset of last real space for a child entry in the node ( = \WORDSINBTREEMAIN - 4)")
+
+               (CONSTANTS (\BTREEWORDSPERSLOT 4)
+                      (\BTREEMAXENTRIES 8)
+                      (\BTREEMAXCOUNT 8)
+                      (\BTREEWORDSPERENTRY 4)
+                      (\WORDSINBTREEMAIN (UNFOLD \BTREEMAXENTRIES 4))
+                      (\BTREELASTREALOFFSET (UNFOLD (SUB1 \BTREEMAXENTRIES)
+                                                   4))
+                      (\BTREETOPHALFOFFSET (UNFOLD (FOLDLO \BTREEMAXENTRIES 2)
+                                                  4)))
+               (RECORDS BTSLOT)
+               (MACROS \NTHSLOT \NEXTSLOT \PREVSLOT \LASTSLOT)
+               (I.S.OPRS inslots)
+               (FILES (LOADCOMP)
+                      TEDIT-DCL))
+        (FNS \UPDATEPCNODES \FIRSTNODE \DELETETREE \INSERTTREE \LASTNODE \MATCHPCS \SPLITTREE 
+             \TEDIT.PIECE-CHNO \TEDIT.SET-TOTLEN)
+        (COMS                                                (* ; "Debugging ")
+              (FNS \GET-BTREE-DLEN))
+        (FNS DISPTREE TREEGRAPHNODE)
+        (RECORDS BTREENODE)
+        (DECLARE%: DONTEVAL@LOAD DOEVAL@COMPILE DONTCOPY COMPILERVARS (ADDVARS (NLAMA)
+                                                                             (NLAML)
+                                                                             (LAMA)))
+        (FNS \UPDATEPCNODES \INSERTTREE \TEDIT.UPDATETREE \UPDATEPCNODES \DELETETREE)))
+
+
+
+(* ;; "Balanced tree PIECE TABLE supporting functions")
+
+
+(FILESLOAD TEDIT-DCL)
+(DECLARE%: EVAL@COMPILE DONTCOPY 
+(DECLARE%: EVAL@COMPILE 
+
+(RPAQQ \BTREEWORDSPERSLOT 4)
+
+(RPAQQ \BTREEMAXENTRIES 8)
+
+(RPAQQ \BTREEMAXCOUNT 8)
+
+(RPAQQ \BTREEWORDSPERENTRY 4)
+
+(RPAQ \WORDSINBTREEMAIN (UNFOLD \BTREEMAXENTRIES 4))
+
+(RPAQ \BTREELASTREALOFFSET (UNFOLD (SUB1 \BTREEMAXENTRIES)
+                                  4))
+
+(RPAQ \BTREETOPHALFOFFSET (UNFOLD (FOLDLO \BTREEMAXENTRIES 2)
+                                 4))
+
+
+(CONSTANTS (\BTREEWORDSPERSLOT 4)
+       (\BTREEMAXENTRIES 8)
+       (\BTREEMAXCOUNT 8)
+       (\BTREEWORDSPERENTRY 4)
+       (\WORDSINBTREEMAIN (UNFOLD \BTREEMAXENTRIES 4))
+       (\BTREELASTREALOFFSET (UNFOLD (SUB1 \BTREEMAXENTRIES)
+                                    4))
+       (\BTREETOPHALFOFFSET (UNFOLD (FOLDLO \BTREEMAXENTRIES 2)
+                                   4)))
+)
+
+(DECLARE%: EVAL@COMPILE
+
+(ACCESSFNS BTSLOT ((DOWN (\GETBASEPTR DATUM 0)
+                         (\RPLPTR DATUM 0 NEWVALUE))
+                   (DLEN (\GETBASEFIXP DATUM 2)
+                         (\PUTBASEFIXP DATUM 2 NEWVALUE))))
+)
+
+(DECLARE%: EVAL@COMPILE 
+
+(PUTPROPS \NTHSLOT MACRO ((BTREENODE N)
+                          (\ADDBASE BTREENODE (UNFOLD N \BTREEWORDSPERSLOT))))
+
+(PUTPROPS \NEXTSLOT MACRO ((SLOT)
+                           (\ADDBASE SLOT \BTREEWORDSPERSLOT)))
+
+(PUTPROPS \PREVSLOT MACRO ((SLOT)
+                           (\ADDBASE SLOT (IMINUS \BTREEWORDSPERSLOT))))
+
+(PUTPROPS \LASTSLOT MACRO ((BTNODE)
+                           (\ADDBASE BTNODE (UNFOLD (fetch (BTREENODE COUNT) of BTNODE)
+                                                   \BTREEWORDSPERSLOT))))
+)
+
+(DECLARE%: EVAL@COMPILE 
+
+(I.S.OPR 'inslots NIL '[SUBST (GETDUMMYVAR)
+                              '$$BTBODY
+                              '(bind $$BTBODY _ BODY $$BTEND declare (LOCALVARS $$BTBODY $$BTEND)
+                                  first (SETQ I.V. $$BTBODY)
+                                        (SETQ $$BTEND (\LASTSLOT $$BTBODY))
+                                  until (EQ I.V. $$BTEND) by (\ADDBASE I.V. \BTREEWORDSPERSLOT]
+       T)
+)
+
+
+(FILESLOAD (LOADCOMP)
+       TEDIT-DCL)
+)
+(DEFINEQ
+
+(\UPDATEPCNODES
+  [LAMBDA (PC/NODE DELTA)                                    (* ; "Edited 13-Aug-2022 10:35 by rmk")
+                                                             (* ; "Edited 10-Aug-2022 10:44 by rmk")
+                                                             (* ; "Edited 21-Apr-93 16:09 by jds")
+
+    (* ;; "The size of the text represented by PC/NODE has grown by DELTA.  If PC/NODE is a piece, then update its node first, and then all of its parents to reflect the change in length.  (Intuitively, the PTREENODE is the first %"upward%" link from the piece.")
+
+    (* ;; "If PC/NODE is a tree node, then start with its parent, assuming that the given node is already correct.")
+
+    (bind (UPWARD _ (if (type? PIECE PC/NODE)
+                        then (fetch (PIECE PTREENODE) of PC/NODE)
+                      else (fetch (BTREENODE UPWARD) of PC/NODE))) while UPWARD
+       do (for ITEM# from 0 by 4 as ITEM from 1 to (fetch (BTREENODE COUNT) of UPWARD)
+             when (EQ PC/NODE (\GETBASEPTR UPWARD ITEM#))
+             do [\PUTBASEFIXP UPWARD (IPLUS ITEM# 2)
+                       (IPLUS DELTA (\GETBASEFIXP UPWARD (IPLUS ITEM# 2]
+                (add (fetch (BTREENODE TOTLEN) of UPWARD)
+                     DELTA)
+                (RETURN) finally (HELP "Piece not in its BTREENODE"))
+          (SETQ PC/NODE UPWARD)
+          (SETQ UPWARD (fetch (BTREENODE UPWARD) of PC/NODE])
+
+(\FIRSTNODE
+  [LAMBDA (TREE)                                             (* ; "Edited 16-Aug-2022 10:16 by rmk")
+                                                             (* ; "Edited 22-Jul-2022 08:22 by rmk")
+                                                             (* ; "Edited 14-Apr-93 02:06 by jds")
+    (bind CHILD _ TREE while (type? BTREENODE CHILD) do (SETQ CHILD (ffetch (BTSLOT DOWN)
+                                                                       of CHILD))
+       finally (RETURN CHILDy])
+
+(\DELETETREE
+  [LAMBDA (OLD PCNODE)                                       (* ; "Edited 16-Aug-2022 09:27 by rmk")
+                                                             (* ; "Edited 10-Aug-2022 00:18 by rmk")
+                                                             (* ; 
+                                                        "Edited 21-Mar-95 15:29 by sybalsky:mv:envos")
+
+    (* ;; "Removes OLD from PCNODE.  OLD is either a piece or tree node.")
+
+    (UNINTERRUPTABLY
+        (LET* ((OLDLEN (ffetch (BTREENODE TOTLEN) of PCNODE))
+               NEWLEN NODE-COUNT ITEM# BB)
+              (SETQ NODE-COUNT (fetch (BTREENODE COUNT) of PCNODE))
+
+              (* ;; "Find OLD, .")
+
+              (for old ITEM# from 0 to (LLSH (SUB1 NODE-COUNT)
+                                             2) by 4 when (EQ OLD (\GETBASEPTR PCNODE ITEM#))
+                 do (RETURN) finally (HELP "Piece/node not in PCNODE"))
+
+              (* ;; "Update the previous piece's length, if appropriate:")
+
+              (SETQ BB (\ADDBASE PCNODE ITEM#))
+              (\RPLPTR BB 0 NIL)
+              [for I from 0 to (IDIFFERENCE \BTREELASTREALOFFSET ITEM#) by 4
+                 do (\PUTBASEPTR BB I (\GETBASEPTR BB (IPLUS I 4)))
+                    (\PUTBASEFIXP BB (IPLUS I 2)
+                           (\GETBASEFIXP BB (IPLUS I 6]
+              (\PUTBASEPTR PCNODE \BTREELASTREALOFFSET NIL)  (* ; 
+                     "Because it's been copied, clear the old value before the refcnt-er gets to it.")
+
+              (* ;; " If adding this piece EMPTIES the tree node, DELETE it.")
+
+              (* ;; "FIXMI -- This should coalesce adjacent nodes that are too empty!")
+
+              [COND
+                 ((IEQP NODE-COUNT 1)
+                  (\DELETETREE PCNODE (fetch (BTREENODE UPWARD) of PCNODE)))
+                 (T                                          (* ; 
+                                                 "No split, so update upper nodes with delta-length.")
+                    [SETQ NEWLEN
+                     (replace (BTREENODE TOTLEN) of PCNODE
+                        with (for I from 2 to NODE-COUNT as ITEM# from 2 by 4
+                                sum (\GETBASEFIXP PCNODE ITEM#]
+                    (replace (BTREENODE COUNT) of PCNODE with (SUB1 NODE-COUNT))
+                    (\UPDATEPCNODES PCNODE (IDIFFERENCE NEWLEN OLDLEN]
+              1))])
+
+(\INSERTTREE
+  [LAMBDA (NEW OLD PCNODE NEW-OLDLEN)                        (* ; "Edited 10-Aug-2022 00:15 by rmk")
+                                                             (* ; "Edited 22-Jul-2022 12:02 by rmk")
+                                                           (* ; "Edited 21-Jun-2022 23:39 by larry")
+                                                             (* ; 
+                                                        "Edited 21-Mar-95 15:29 by sybalsky:mv:envos")
+
+    (* ;; "inserts NEW in front of OLD in PCNODE.  NEW/OLD are either pieces or tree nodes.")
+
+    (UNINTERRUPTABLY
+        (LET ((OLDLEN (ffetch (BTREENODE TOTLEN) of PCNODE))
+              NEWLEN NODE-COUNT ITEM# BB)
+             (SETQ NODE-COUNT (fetch (BTREENODE COUNT) of PCNODE))
+
+             (* ;; "Find OLD, and insert the NEW piece (and length) in front of it.")
+
+             (for old ITEM# from 0 to (LLSH (SUB1 NODE-COUNT)
+                                            2) by 4 when (EQ OLD (\GETBASEPTR PCNODE ITEM#))
+                do (RETURN) finally (HELP "Old piece not in this PCNODE."))
+             (OR NEW (HELP "Inserting empty item"))
+             (CL:WHEN NEW-OLDLEN
+                 (\PUTBASEFIXP PCNODE (IPLUS ITEM# 2)
+                        NEW-OLDLEN))
+             (SETQ BB (\ADDBASE PCNODE ITEM#))
+             (\RPLPTR PCNODE \WORDSINBTREEMAIN NIL)          (* ; 
+                                                 "Clean out the slot that's about to be copied over.")
+             (\BLT (\ADDBASE BB 4)
+                   BB
+                   (IDIFFERENCE \WORDSINBTREEMAIN ITEM#))
+             (\PUTBASEPTR PCNODE ITEM# NIL)                  (* ; 
+                     "Because it's been copied, clear the old value before the refcnt-er gets to it.")
+             (\RPLPTR PCNODE ITEM# NEW)
+             (COND
+                ((type? PIECE NEW)
+                 (\PUTBASEFIXP PCNODE (IPLUS ITEM# 2)
+                        (fetch (PIECE PLEN) of NEW))
+                 (replace (PIECE PTREENODE) of NEW with PCNODE))
+                ((type? BTREENODE NEW)                       (* ; "Inserting a NODE")
+                 (\PUTBASEFIXP PCNODE (IPLUS ITEM# 2)
+                        (fetch (BTREENODE TOTLEN) of NEW))
+                 (replace (BTREENODE UPWARD) of NEW with PCNODE))
+                (T (\ILLEGAL.ARG NEW)))
+             (SETQ NEWLEN (for I from 0 to NODE-COUNT as ITEM# from 2 by 4
+                             sum (\GETBASEFIXP PCNODE ITEM#)))
+             (CL:UNLESS (AND (IGEQ NEWLEN 0)
+                             (ILEQ NEWLEN MAX.FIXP))
+                    (ERROR NEWLEN " is not a valid piece length"))
+             (replace (BTREENODE TOTLEN) of PCNODE with NEWLEN)
+
+             (* ;; " If adding this piece overflows the tree node, split it.")
+
+             [COND
+                ((IEQP NODE-COUNT \BTREEMAXCOUNT)            (* ; 
+                                                             "Tree node is full, so have to split.")
+                 (\SPLITTREE PCNODE OLD NEW))
+                (T                                           (* ; 
+                                                 "No split, so update upper nodes with delta-length.")
+                   (replace (BTREENODE COUNT) of PCNODE with (ADD1 NODE-COUNT))
+                   (\UPDATEPCNODES PCNODE (IDIFFERENCE NEWLEN OLDLEN]
+             NEW))])
+
+(\LASTNODE
+  [LAMBDA (TREE)                                             (* ; "Edited 16-Aug-2022 10:16 by rmk")
+                                                             (* ; "Edited 14-Apr-93 16:29 by jds")
+
+    (* ;; "Maybe this should not return the LASTPIECE?")
+
+    (bind CHILD _ TREE while (type? BTREENODE CHILD) do (SETQ CHILD (ffetch (BTSLOT DOWN)
+                                                                       of (\LASTSLOT CHILD)))
+       finally (RETURN CHILD])
+
+(\MATCHPCS
+  [LAMBDA (PCNODE)                                           (* ; "Edited 15-Aug-2022 23:06 by rmk")
+                                                             (* ; "Edited  5-May-93 17:57 by jds")
+
+    (* ;; "Make sure that any pieces pointed to this node point back to this node.")
+
+    (for S PC inslots PCNODE do (SETQ PC (ffetch (BTSLOT DOWN) of PC))
+                                (if (type? PIECE PC)
+                                    then (freplace (PIECE PTREENODE) of PC with PCNODE)
+                                  elseif (type? BTREENODE PC)
+                                    then (freplace (BTREENODE UPWARD) of PC with PCNODE])
+
+(\SPLITTREE
+  [LAMBDA (PCNODE)                                           (* ; "Edited 16-Aug-2022 10:39 by rmk")
+                                                             (* ; 
+                                                        "Edited 21-Mar-95 15:26 by sybalsky:mv:envos")
+
+    (* ;; "PCNODE is full, split it in two and propagate changes upward. Returns the new prefix piece, which could be PCNODE.")
+
+    (UNINTERRUPTABLY
+        (LET ((UPWARD (fetch (BTREENODE UPWARD) of PCNODE))
+              COUNT ITEM# NEW1 NEW2)
+             [COND
+                (UPWARD 
+
+                       (* ;; 
+                       "Easy case:  This is not the root node, so split the node and propogate up.")
+
+                       (SETQ NEW1 (create BTREENODE using PCNODE))
+
+                       (* ;; "Clean out upper 3 child entries, leaving only the lower 2.  Have to tell GC about actual child slots being set to NIL (hence \RPLPTRs):")
+
+                       (for OFST from \BTREETOPHALFOFFSET to \WORDSINBTREEMAIN by 4
+                          do (\RPLPTR NEW1 OFST NIL)
+                             (\PUTBASEFIXP NEW1 (IPLUS OFST 2)
+                                    0))
+                       (replace (BTREENODE COUNT) of NEW1 with (LRSH \BTREEMAXENTRIES 1))
+                       (\TEDIT.SET-TOTLEN NEW1)
+                       (\MATCHPCS NEW1)
+
+                       (* ;; 
+                       "Now clean up the old piece, to contain only the upper 3 original children:")
+
+                       (for OFST from 0 to (SUB1 \BTREETOPHALFOFFSET) by 4
+                          do                                 (* ; 
+                                 "For GC, have to tell it we've dropped pointers to first N/2 pieces")
+                             (\RPLPTR PCNODE OFST NIL))
+
+                       (* ;; "Move upper N/2+1 down")
+
+                       [for OFST from 0 to \BTREETOPHALFOFFSET by 4 as UPPEROFST from 
+                                                                                  \BTREETOPHALFOFFSET
+                          by 4 do (\PUTBASEPTR PCNODE OFST (\GETBASEPTR PCNODE UPPEROFST))
+                                  (\PUTBASEFIXP PCNODE (IPLUS 2 OFST)
+                                         (\GETBASEFIXP PCNODE (IPLUS 2 UPPEROFST]
+
+                       (* ;; "And clean out upper 2 slots, without the GC seeing it:")
+
+                       (for OFST from (IPLUS \BTREEWORDSPERENTRY \BTREETOPHALFOFFSET) to 
+                                                                                    \WORDSINBTREEMAIN
+                          by \BTREEWORDSPERENTRY do (\PUTBASEPTR PCNODE OFST NIL)
+                                                    (\PUTBASEFIXP PCNODE (IPLUS OFST 2)
+                                                           0))
+                       (replace (BTREENODE COUNT) of PCNODE with (ADD1 (LRSH \BTREEMAXENTRIES 1)))
+                       (\TEDIT.SET-TOTLEN PCNODE)
+                       (SETQ COUNT (fetch (BTREENODE COUNT) of UPWARD))
+                       (\INSERTTREE NEW1 PCNODE UPWARD NIL (fetch (BTREENODE TOTLEN) of PCNODE)))
+                (T 
+                   (* ;; "Hard case:  This is the root node.  We need to create 2 new nodes, put the split parts there, and re-use this node as the root.")
+
+                   (SETQ NEW1 (create BTREENODE using PCNODE))
+                   (for OFST from \BTREETOPHALFOFFSET to \WORDSINBTREEMAIN by 4
+                      do (\RPLPTR NEW1 OFST NIL)
+                         (\PUTBASEFIXP NEW1 (IPLUS OFST 2)
+                                0))
+                   (replace (BTREENODE UPWARD) of NEW1 with PCNODE)
+                   (replace (BTREENODE COUNT) of NEW1 with (LRSH \BTREEMAXENTRIES 1))
+                   (\TEDIT.SET-TOTLEN NEW1)
+                   (\MATCHPCS NEW1)
+
+                   (* ;; "--")
+
+                   (SETQ NEW2 (create BTREENODE using PCNODE))
+                   (for OFST from 0 to (SUB1 \BTREETOPHALFOFFSET) by 4
+                      do                                     (* ; 
+                                 "For GC, have to tell it we've dropped pointers to first N/2 pieces")
+                         (\RPLPTR NEW2 OFST NIL))
+                   [for OFST from 0 to \BTREETOPHALFOFFSET by 4 as UPPEROFST from \BTREETOPHALFOFFSET
+                      by 4 do (\PUTBASEPTR NEW2 OFST (\GETBASEPTR NEW2 UPPEROFST))
+                              (\PUTBASEFIXP NEW2 (IPLUS 2 OFST)
+                                     (\GETBASEFIXP NEW2 (IPLUS 2 UPPEROFST]
+                   (for OFST from (IPLUS \BTREEWORDSPERENTRY \BTREETOPHALFOFFSET) to 
+                                                                                    \WORDSINBTREEMAIN
+                      by \BTREEWORDSPERENTRY do (\PUTBASEPTR NEW2 OFST NIL)
+                                                (\PUTBASEFIXP NEW2 (IPLUS OFST 2)
+                                                       0))
+                   (replace (BTREENODE UPWARD) of NEW2 with PCNODE)
+                   (replace (BTREENODE COUNT) of NEW2 with (ADD1 (LRSH \BTREEMAXENTRIES 1)))
+                   (\TEDIT.SET-TOTLEN NEW2)
+                   (\MATCHPCS NEW2)
+
+                   (* ;; "Now clean out the top-level node, and fill it in with its new children.")
+
+                   (for OFST from 0 to \WORDSINBTREEMAIN by \BTREEWORDSPERENTRY
+                      do 
+                         (* ;; "Clean out the entries in the node, so we don't over-write them by mistake, thus losing refcount sync.")
+
+                         (\RPLPTR PCNODE OFST NIL)
+                         (\PUTBASEFIXP PCNODE (IPLUS 2 OFST)
+                                0))
+                   (\RPLPTR PCNODE 0 NEW1)                   (* ; "Add first new node")
+                   (\PUTBASEFIXP PCNODE 2 (ffetch (BTREENODE TOTLEN) of NEW1))
+                   (\RPLPTR PCNODE 4 NEW2)                   (* ; "And the second....")
+                   (\PUTBASEFIXP PCNODE 6 (ffetch (BTREENODE TOTLEN) of NEW2))
+                   (freplace (BTREENODE COUNT) of PCNODE with 2)
+                   (freplace (BTREENODE TOTLEN) of PCNODE with (IPLUS (ffetch (BTREENODE TOTLEN)
+                                                                         of NEW1)
+                                                                      (ffetch (BTREENODE TOTLEN)
+                                                                         of NEW2]
+             NEW1))])
+
+(\TEDIT.PIECE-CHNO
+  [LAMBDA (PC)                                               (* ; "Edited  8-Aug-2022 21:50 by rmk")
+
+    (* ;; "This returns the character number in the text stream of the first character of PC.  Equivalent to mapping through the next chains from the beginning, but only needs to visit the BNODES above and to the left, so more logarithmic than linear.")
+
+    (LET ((PCNODE (fetch (PIECE PTREENODE) of PC))
+          (CHARCOUNT 0))
+         (while PCNODE do [add CHARCOUNT (for OFST from 0 by 4 while (NEQ PC (\GETBASEPTR PCNODE OFST
+                                                                                    ))
+                                            sum (\GETBASEFIXP PCNODE (IPLUS OFST 2]
+                          (SETQ PC PCNODE)
+                          (SETQ PCNODE (fetch (BTREENODE UPWARD) of PCNODE)))
+         (ADD1 CHARCOUNT])
+
+(\TEDIT.SET-TOTLEN
+  [LAMBDA (PCNODE)                                           (* ; "Edited 15-Aug-2022 17:15 by rmk")
+                                                             (* ; "Edited  9-May-93 15:40 by jds")
+
+    (* ;; "Fix the TOTLEN field of a node to match the sum of its childrens' lengths")
+
+    (replace (BTREENODE TOTLEN) of PCNODE with (for S inslots PCNODE sum (fetch (BTSLOT DLEN)
+                                                                            of S])
+)
+
+
+
+(* ; "Debugging ")
+
+(DEFINEQ
+
+(\GET-BTREE-DLEN
+  [LAMBDA (PC)                                               (* ; "Edited 15-Aug-2022 23:08 by rmk")
+                                                             (* ; "Edited 14-Aug-2022 18:01 by rmk")
+
+    (* ;; "Returns the DLEN of PC in the node that contains it. Mostly for testing")
+
+    (for S inslots (fetch (PIECE PTREENODE) of PC) when (EQ PC (fetch (BTSLOT DOWN) of S))
+       do (RETURN (fetch (BTSLOT DLEN) of S])
+)
+(DEFINEQ
+
+(DISPTREE
+  [LAMBDA (TREE DEPTH)                                       (* ; "Edited 13-Apr-90 15:00 by ON")
+    (LET [(G (TREEGRAPHNODE TREE NIL (OR (NUMBERP DEPTH)
+                                         T]
+         (SHOWGRAPH (LAYOUTGRAPH (CADR G)
+                           (LIST (CAR G))
+                           '(VERTICAL))
+                NIL
+                #'(LAMBDA (X)
+                    (INSPECT (fetch NODEID of X])
+
+(TREEGRAPHNODE
+  [LAMBDA (TREE PARENT DEPTH)                               (* ; "Edited 12-Jun-90 10:33 by mitani")
+    (LET (THISNODE NEWDEPTH NODEID LONODES HINODES BFNODE BFNODEID RANKNODE RANKNODEID)
+         (COND
+            ((ATOM TREE)
+             (LIST [fetch NODEID of (SETQ THISNODE (NODECREATE (CONS)
+                                                          TREE NIL NIL (LIST PARENT]
+                   (LIST THISNODE)))
+            ((OR (EQ DEPTH T)
+                 (AND (NUMBERP DEPTH)
+                      (>= DEPTH 0)))
+             (SETQ NEWDEPTH (COND
+                               ((NUMBERP DEPTH)
+                                (SUB1 DEPTH))
+                               (T DEPTH)))
+             (SETQ NODEID (fetch (PCTNODE PCE) of TREE))
+             (SETQ LONODES (TREEGRAPHNODE (fetch (PCTNODE LO) of TREE)
+                                  NODEID NEWDEPTH))
+             (SETQ HINODES (TREEGRAPHNODE (fetch (PCTNODE HI) of TREE)
+                                  NODEID NEWDEPTH))
+             (SETQ BFNODE (NODECREATE (SETQ BFNODEID (CONS))
+                                 (fetch (PCTNODE BF) of TREE)
+                                 NIL NIL (LIST NODEID)))
+             (SETQ RANKNODE (NODECREATE (SETQ RANKNODEID (CONS))
+                                   (fetch (PCTNODE RANK) of TREE)
+                                   NIL NIL (LIST NODEID)))
+             [SETQ THISNODE (NODECREATE NODEID (fetch (PCTNODE CHNUM) of TREE)
+                                   NIL
+                                   (LIST (CAR LONODES)
+                                         BFNODEID RANKNODEID (CAR HINODES))
+                                   (AND PARENT (LIST PARENT]
+             (LIST (fetch NODEID of THISNODE)
+                   (APPEND (LIST THISNODE BFNODE RANKNODE)
+                          (CADR LONODES)
+                          (CADR HINODES])
+)
+(DECLARE%: EVAL@COMPILE
+
+(DATATYPE BTREENODE (
+                     (* ;; "An order-4 BTREE node for representing the piece table for TEdit.")
+
+                     DOWN1
+                     (DLEN1 FIXP)
+                     DOWN2
+                     (DLEN2 FIXP)
+                     DOWN3
+                     (DLEN3 FIXP)
+                     DOWN4
+                     (DLEN4 FIXP)
+                     DOWN5
+                     (DLEN5 FIXP)
+                     DOWN6
+                     (DLEN6 FIXP)
+                     DOWN7
+                     (DLEN7 FIXP)
+                     DOWN8
+                     (DLEN8 FIXP)
+                     SPARE5                                  (* ; 
+                                           "Used only to hold the extra piece when we're overflowing")
+                     (SPARELEN FIXP)                         (* ; "So the code is easy and fast.")
+                     (COUNT BITS 4)                          (* ; "# of children of this node")
+                     (UPWARD XPOINTER)                       (* ; "Parent of this node, if any.")
+                     (TOTLEN FIXP)                           (* ; 
+                                                             "Total length of this tree and subtrees")
+                     ))
+)
+
+(/DECLAREDATATYPE 'BTREENODE
+       '(POINTER FIXP POINTER FIXP POINTER FIXP POINTER FIXP POINTER FIXP POINTER FIXP POINTER FIXP 
+               POINTER FIXP POINTER FIXP (BITS 4)
+               XPOINTER FIXP)
+       '((BTREENODE 0 POINTER)
+         (BTREENODE 2 FIXP)
+         (BTREENODE 4 POINTER)
+         (BTREENODE 6 FIXP)
+         (BTREENODE 8 POINTER)
+         (BTREENODE 10 FIXP)
+         (BTREENODE 12 POINTER)
+         (BTREENODE 14 FIXP)
+         (BTREENODE 16 POINTER)
+         (BTREENODE 18 FIXP)
+         (BTREENODE 20 POINTER)
+         (BTREENODE 22 FIXP)
+         (BTREENODE 24 POINTER)
+         (BTREENODE 26 FIXP)
+         (BTREENODE 28 POINTER)
+         (BTREENODE 30 FIXP)
+         (BTREENODE 32 POINTER)
+         (BTREENODE 34 FIXP)
+         (BTREENODE 32 (BITS . 3))
+         (BTREENODE 36 XPOINTER)
+         (BTREENODE 38 FIXP))
+       '40)
+(DECLARE%: DONTEVAL@LOAD DOEVAL@COMPILE DONTCOPY COMPILERVARS 
+
+(ADDTOVAR NLAMA )
+
+(ADDTOVAR NLAML )
+
+(ADDTOVAR LAMA )
+)
+(DEFINEQ
+
+(\UPDATEPCNODES
+  [LAMBDA (PC/NODE DELTA)                                    (* ; "Edited 13-Aug-2022 10:35 by rmk")
+                                                             (* ; "Edited 10-Aug-2022 10:44 by rmk")
+                                                             (* ; "Edited 21-Apr-93 16:09 by jds")
+
+    (* ;; "The size of the text represented by PC/NODE has grown by DELTA.  If PC/NODE is a piece, then update its node first, and then all of its parents to reflect the change in length.  (Intuitively, the PTREENODE is the first %"upward%" link from the piece.")
+
+    (* ;; "If PC/NODE is a tree node, then start with its parent, assuming that the given node is already correct.")
+
+    (bind (UPWARD _ (if (type? PIECE PC/NODE)
+                        then (fetch (PIECE PTREENODE) of PC/NODE)
+                      else (fetch (BTREENODE UPWARD) of PC/NODE))) while UPWARD
+       do (for ITEM# from 0 by 4 as ITEM from 1 to (fetch (BTREENODE COUNT) of UPWARD)
+             when (EQ PC/NODE (\GETBASEPTR UPWARD ITEM#))
+             do [\PUTBASEFIXP UPWARD (IPLUS ITEM# 2)
+                       (IPLUS DELTA (\GETBASEFIXP UPWARD (IPLUS ITEM# 2]
+                (add (fetch (BTREENODE TOTLEN) of UPWARD)
+                     DELTA)
+                (RETURN) finally (HELP "Piece not in its BTREENODE"))
+          (SETQ PC/NODE UPWARD)
+          (SETQ UPWARD (fetch (BTREENODE UPWARD) of PC/NODE])
+
+(\INSERTTREE
+  [LAMBDA (NEW OLD PCNODE NEW-OLDLEN)                        (* ; "Edited 10-Aug-2022 00:15 by rmk")
+                                                             (* ; "Edited 22-Jul-2022 12:02 by rmk")
+                                                           (* ; "Edited 21-Jun-2022 23:39 by larry")
+                                                             (* ; 
+                                                        "Edited 21-Mar-95 15:29 by sybalsky:mv:envos")
+
+    (* ;; "inserts NEW in front of OLD in PCNODE.  NEW/OLD are either pieces or tree nodes.")
+
+    (UNINTERRUPTABLY
+        (LET ((OLDLEN (ffetch (BTREENODE TOTLEN) of PCNODE))
+              NEWLEN NODE-COUNT ITEM# BB)
+             (SETQ NODE-COUNT (fetch (BTREENODE COUNT) of PCNODE))
+
+             (* ;; "Find OLD, and insert the NEW piece (and length) in front of it.")
+
+             (for old ITEM# from 0 to (LLSH (SUB1 NODE-COUNT)
+                                            2) by 4 when (EQ OLD (\GETBASEPTR PCNODE ITEM#))
+                do (RETURN) finally (HELP "Old piece not in this PCNODE."))
+             (OR NEW (HELP "Inserting empty item"))
+             (CL:WHEN NEW-OLDLEN
+                 (\PUTBASEFIXP PCNODE (IPLUS ITEM# 2)
+                        NEW-OLDLEN))
+             (SETQ BB (\ADDBASE PCNODE ITEM#))
+             (\RPLPTR PCNODE \WORDSINBTREEMAIN NIL)          (* ; 
+                                                 "Clean out the slot that's about to be copied over.")
+             (\BLT (\ADDBASE BB 4)
+                   BB
+                   (IDIFFERENCE \WORDSINBTREEMAIN ITEM#))
+             (\PUTBASEPTR PCNODE ITEM# NIL)                  (* ; 
+                     "Because it's been copied, clear the old value before the refcnt-er gets to it.")
+             (\RPLPTR PCNODE ITEM# NEW)
+             (COND
+                ((type? PIECE NEW)
+                 (\PUTBASEFIXP PCNODE (IPLUS ITEM# 2)
+                        (fetch (PIECE PLEN) of NEW))
+                 (replace (PIECE PTREENODE) of NEW with PCNODE))
+                ((type? BTREENODE NEW)                       (* ; "Inserting a NODE")
+                 (\PUTBASEFIXP PCNODE (IPLUS ITEM# 2)
+                        (fetch (BTREENODE TOTLEN) of NEW))
+                 (replace (BTREENODE UPWARD) of NEW with PCNODE))
+                (T (\ILLEGAL.ARG NEW)))
+             (SETQ NEWLEN (for I from 0 to NODE-COUNT as ITEM# from 2 by 4
+                             sum (\GETBASEFIXP PCNODE ITEM#)))
+             (CL:UNLESS (AND (IGEQ NEWLEN 0)
+                             (ILEQ NEWLEN MAX.FIXP))
+                    (ERROR NEWLEN " is not a valid piece length"))
+             (replace (BTREENODE TOTLEN) of PCNODE with NEWLEN)
+
+             (* ;; " If adding this piece overflows the tree node, split it.")
+
+             [COND
+                ((IEQP NODE-COUNT \BTREEMAXCOUNT)            (* ; 
+                                                             "Tree node is full, so have to split.")
+                 (\SPLITTREE PCNODE OLD NEW))
+                (T                                           (* ; 
+                                                 "No split, so update upper nodes with delta-length.")
+                   (replace (BTREENODE COUNT) of PCNODE with (ADD1 NODE-COUNT))
+                   (\UPDATEPCNODES PCNODE (IDIFFERENCE NEWLEN OLDLEN]
+             NEW))])
+
+(\TEDIT.UPDATETREE
+  [LAMBDA (PCNODE DELTA)                                     (* ; "Edited  9-Aug-2022 23:33 by rmk")
+                                                             (* ; 
+                                                        "Edited 21-Mar-95 14:40 by sybalsky:mv:envos")
+
+    (* ;; "The size of the text represented by PCNODE has grown by DELTA.  Update all of PCNODE's parents to reflect the change in length.")
+
+    (bind (UPWARD _ (fetch (BTREENODE UPWARD) of PCNODE)) while UPWARD
+       do 
+          (* ;; "Keep going up in the tree til we hit the top.")
+
+          (for ITEM# from 0 by 4 as ITEM from 1 to (ffetch (BTREENODE COUNT) of UPWARD)
+             when (EQ PCNODE (\GETBASEPTR UPWARD ITEM#))
+             do [\PUTBASEFIXP UPWARD (IPLUS ITEM# 2)
+                       (IPLUS DELTA (\GETBASEFIXP UPWARD (IPLUS ITEM# 2]
+                (add (fetch (BTREENODE TOTLEN) of UPWARD)
+                     DELTA)
+                (RETURN) FINALLY (HELP "PCNODE not in upward node."))
+          (SETQ PCNODE UPWARD)
+          (SETQ UPWARD (fetch (BTREENODE UPWARD) of PCNODE])
+
+(\UPDATEPCNODES
+  [LAMBDA (PC/NODE DELTA)                                    (* ; "Edited 13-Aug-2022 10:35 by rmk")
+                                                             (* ; "Edited 10-Aug-2022 10:44 by rmk")
+                                                             (* ; "Edited 21-Apr-93 16:09 by jds")
+
+    (* ;; "The size of the text represented by PC/NODE has grown by DELTA.  If PC/NODE is a piece, then update its node first, and then all of its parents to reflect the change in length.  (Intuitively, the PTREENODE is the first %"upward%" link from the piece.")
+
+    (* ;; "If PC/NODE is a tree node, then start with its parent, assuming that the given node is already correct.")
+
+    (bind (UPWARD _ (if (type? PIECE PC/NODE)
+                        then (fetch (PIECE PTREENODE) of PC/NODE)
+                      else (fetch (BTREENODE UPWARD) of PC/NODE))) while UPWARD
+       do (for ITEM# from 0 by 4 as ITEM from 1 to (fetch (BTREENODE COUNT) of UPWARD)
+             when (EQ PC/NODE (\GETBASEPTR UPWARD ITEM#))
+             do [\PUTBASEFIXP UPWARD (IPLUS ITEM# 2)
+                       (IPLUS DELTA (\GETBASEFIXP UPWARD (IPLUS ITEM# 2]
+                (add (fetch (BTREENODE TOTLEN) of UPWARD)
+                     DELTA)
+                (RETURN) finally (HELP "Piece not in its BTREENODE"))
+          (SETQ PC/NODE UPWARD)
+          (SETQ UPWARD (fetch (BTREENODE UPWARD) of PC/NODE])
+
+(\DELETETREE
+  [LAMBDA (OLD PCNODE)                                       (* ; "Edited 16-Aug-2022 09:27 by rmk")
+                                                             (* ; "Edited 10-Aug-2022 00:18 by rmk")
+                                                             (* ; 
+                                                        "Edited 21-Mar-95 15:29 by sybalsky:mv:envos")
+
+    (* ;; "Removes OLD from PCNODE.  OLD is either a piece or tree node.")
+
+    (UNINTERRUPTABLY
+        (LET* ((OLDLEN (ffetch (BTREENODE TOTLEN) of PCNODE))
+               NEWLEN NODE-COUNT ITEM# BB)
+              (SETQ NODE-COUNT (fetch (BTREENODE COUNT) of PCNODE))
+
+              (* ;; "Find OLD, .")
+
+              (for old ITEM# from 0 to (LLSH (SUB1 NODE-COUNT)
+                                             2) by 4 when (EQ OLD (\GETBASEPTR PCNODE ITEM#))
+                 do (RETURN) finally (HELP "Piece/node not in PCNODE"))
+
+              (* ;; "Update the previous piece's length, if appropriate:")
+
+              (SETQ BB (\ADDBASE PCNODE ITEM#))
+              (\RPLPTR BB 0 NIL)
+              [for I from 0 to (IDIFFERENCE \BTREELASTREALOFFSET ITEM#) by 4
+                 do (\PUTBASEPTR BB I (\GETBASEPTR BB (IPLUS I 4)))
+                    (\PUTBASEFIXP BB (IPLUS I 2)
+                           (\GETBASEFIXP BB (IPLUS I 6]
+              (\PUTBASEPTR PCNODE \BTREELASTREALOFFSET NIL)  (* ; 
+                     "Because it's been copied, clear the old value before the refcnt-er gets to it.")
+
+              (* ;; " If adding this piece EMPTIES the tree node, DELETE it.")
+
+              (* ;; "FIXMI -- This should coalesce adjacent nodes that are too empty!")
+
+              [COND
+                 ((IEQP NODE-COUNT 1)
+                  (\DELETETREE PCNODE (fetch (BTREENODE UPWARD) of PCNODE)))
+                 (T                                          (* ; 
+                                                 "No split, so update upper nodes with delta-length.")
+                    [SETQ NEWLEN
+                     (replace (BTREENODE TOTLEN) of PCNODE
+                        with (for I from 2 to NODE-COUNT as ITEM# from 2 by 4
+                                sum (\GETBASEFIXP PCNODE ITEM#]
+                    (replace (BTREENODE COUNT) of PCNODE with (SUB1 NODE-COUNT))
+                    (\UPDATEPCNODES PCNODE (IDIFFERENCE NEWLEN OLDLEN]
+              1))])
+)
+(DECLARE%: DONTCOPY
+  (FILEMAP (NIL (5020 23077 (\UPDATEPCNODES 5030 . 6587) (\FIRSTNODE 6589 . 7161) (\DELETETREE 7163 . 
+9747) (\INSERTTREE 9749 . 13351) (\LASTNODE 13353 . 13889) (\MATCHPCS 13891 . 14644) (\SPLITTREE 14646
+ . 21595) (\TEDIT.PIECE-CHNO 21597 . 22533) (\TEDIT.SET-TOTLEN 22535 . 23075)) (23105 23623 (
+\GET-BTREE-DLEN 23115 . 23621)) (23624 26060 (DISPTREE 23634 . 24090) (TREEGRAPHNODE 24092 . 26058)) (
+28390 38921 (\UPDATEPCNODES 28400 . 29957) (\INSERTTREE 29959 . 33561) (\TEDIT.UPDATETREE 33563 . 
+34774) (\UPDATEPCNODES 34776 . 36333) (\DELETETREE 36335 . 38919)))))
+STOP

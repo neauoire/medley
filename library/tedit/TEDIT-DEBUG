@@ -1,0 +1,597 @@
+(DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
+
+(FILECREATED "14-Sep-2022 13:18:18" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-DEBUG.;30 33170  
+
+      :CHANGES-TO (FNS SHOWTHISLINE)
+
+      :PREVIOUS-DATE "14-Sep-2022 08:37:20" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-DEBUG.;29)
+
+
+(PRETTYCOMPRINT TEDIT-DEBUGCOMS)
+
+(RPAQQ TEDIT-DEBUGCOMS
+       [(FNS ITS SP SPPRINT SPPRINT.OBJ TRY UPDATE-TEDIT CURRENTFILES NTHPIECE NPIECES TRYMENU 
+             PRINTSPEC PTMENU MYTEDITMENU TEDITCLOSEW)
+        (FNS UPDATE-TEDIT CURRENTFILES EDIT-TEDIT MAKE-TEDIT-EXPORTS.ALL)
+        (FNS SHOWTHISLINE INSPECTLINES)
+        (INITVARS (LASTTS NIL))
+        (INITVARS [TINY '((MB.INSERT NIL)
+                          (MB.TEXT "6" NIL)
+                          (MB.TEXT "7" NIL)
+                          (MB.TEXT "8" NIL]
+               [SMALL '((MB.BUTTON "Quit" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672)
+                        (MB.TEXT "1" NIL)
+                        (MB.BUTTON "Page Layout" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672)
+                        (MB.TEXT "2" NIL)
+                        (MB.BUTTON "Char Looks" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672)
+                        (MB.TEXT "3" NIL)
+                        (MB.BUTTON "Para Looks" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672)
+                        (MB.TEXT "4" NIL)
+                        (MB.BUTTON "All" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672)
+                        (MB.TEXT "5" NIL)
+                        (MB.TOGGLE "Unformatted" {FONTDESCRIPTOR}#147,134672 
+                               \TEDITMENU.RECORD.UNFORMATTED NIL)
+                        (MB.TEXT "
+" NIL)
+                        (MB.BUTTON "Get" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672)
+                        (MB.INSERT NIL)
+                        (MB.TEXT "6" NIL)
+                        (MB.BUTTON "Put" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672]
+               (TESTSPEC TEDIT.EXPANDEDMENU.SPEC))
+        (FNS PFOT DFOT OTFILES)
+        (P (PSEUDOHOST 'OT (MEDLEYDIR "../oldtedit/")))
+        (P (CL:UNLESS (GETP 'FULLER.DATABASE 'FILE)
+                  (FULLDB)))
+        (DECLARE%: DONTEVAL@LOAD DOEVAL@COMPILE DONTCOPY COMPILERVARS (ADDVARS (NLAMA)
+                                                                             (NLAML DFOT PFOT)
+                                                                             (LAMA])
+(DEFINEQ
+
+(ITS
+  [LAMBDA (TS KEEPOPEN)                                      (* ; "Edited 14-Sep-2022 08:33 by rmk")
+    (CL:UNLESS TS
+        (SETQ TS (OR LASTTS (TEXTSTREAM IT)
+                     (ERROR "NOT A TEXT STREAM" TS))))
+    (SETQ TS (TEXTSTREAM TS))
+    (SETQ LASTTS TS)
+    (CL:UNLESS KEEPOPEN (CLOSEI))
+    [LET (R)
+         [INSPECT (FETCH PCTB OF (TEXTOBJ TS))
+                NIL
+                (CL:UNLESS KEEPOPEN
+                    (SETQ R (CREATEREGION 5 5 240 316)))]
+         [INSPECT TS 'TEXTSTREAM (CL:UNLESS KEEPOPEN
+                                     (CREATEPOSITION 5 (IPLUS 5 (FETCH (REGION TOP) OF R))))]
+         (INSPECT TS NIL (CL:UNLESS KEEPOPEN (CREATEREGION 300 5 360 628)))
+         (INSPECT (TEXTOBJ TS)
+                NIL
+                (CL:UNLESS KEEPOPEN
+                    (CREATEREGION (IPLUS 5 660)
+                           5 315 628))]
+    (SP TS 10)
+    TS])
+
+(SP
+  [LAMBDA (PC NP)                                            (* ; "Edited  7-Sep-2022 18:29 by rmk")
+                                                             (* ; "Edited 24-Aug-2022 14:23 by rmk")
+                                                             (* ; "Edited 21-Aug-2022 11:30 by rmk")
+                                                             (* ; "Edited 16-Aug-2022 19:25 by rmk")
+                                                             (* ; "Edited 14-Aug-2022 22:10 by rmk")
+    (CL:WHEN (FIXP PC)
+        (SETQ NP PC)
+        (SETQ PC NIL))
+    (if PC
+        then (CL:UNLESS (TYPE? PIECE PC)
+                 (SETQ PC (TEXTSTREAM PC)))
+      elseif (OR (TYPE? PIECE IT)
+                 (TEXTSTREAMP IT))
+        then (SETQ PC IT)
+      else (SETQ PC LASTTS))
+    (CL:WHEN (TEXTSTREAMP PC)
+        [SETQ PC (\FIRSTPIECE (fetch PCTB of (fetch TEXTOBJ of PC]
+        (CL:WHEN (AND PC (EQ 0 (PLEN PC)))
+            (SETQ PC (NEXTPIECE PC))))
+    (FOR OLD PC BY (NEXTPIECE PC) AS I FROM 1 WHILE (TYPE? PIECE PC)
+       DO (PRINTOUT T .I3 I "/")
+          (SPPRINT PC))
+    (FOR OLD PC BY (NEXTPIECE PC) AS I FROM 1 TO (OR NP 20) WHILE (TYPE? PIECE PC)
+       DO (PRINTOUT T .I3 I "/")
+          (SPPRINT PC))
+    PC])
+
+(SPPRINT
+  [LAMBDA (PC)                                               (* ; "Edited  7-Sep-2022 18:24 by rmk")
+                                                             (* ; "Edited  1-Sep-2022 09:39 by rmk")
+                                                             (* ; "Edited 24-Aug-2022 14:23 by rmk")
+                                                             (* ; "Edited 14-Aug-2022 21:32 by rmk")
+                                                             (* ; "Edited  8-Aug-2022 15:36 by rmk")
+
+    (* ;; "Prints a summary of PC")
+
+    (LET ((PLEN (PLEN PC))
+          (PCONTENTS (PCONTENTS PC))
+          (PCHARSET (FETCH (PIECE PCHARSET) OF PC))
+          (PTYPE (PTYPE PC))
+          (CHNO (\PCTOCH PC)))
+         (CL:WHEN (AND (STREAMP PCONTENTS)
+                       (NOT (GETSTREAM PCONTENTS 'INPUT T)))
+             [SETQ PCONTENTS (replace PCONTENTS of PC with (OPENSTREAM PCONTENTS 'INPUT])
+         (PRINTOUT T .I3 CHNO " " PC .TAB0 28 "  ")
+         (CL:WHEN (MEMB PTYPE FILE.PTYPES)
+             (SETFILEPTR PCONTENTS (FETCH PFPOS OF PC)))
+         (PRINTOUT T (SELECTC PTYPE
+                         (THINFILE.PTYPE 
+                              'Thinfile)
+                         (FATFILE1.PTYPE 
+                              'Fatfile1)
+                         (FATFILE2.PTYPE 
+                              'Fatfile2)
+                         (THINSTRING.PTYPE 
+                              'Thinstring)
+                         (FATSTRING.PTYPE 
+                              'Fatstring)
+                         (SUBSTREAM.PTYPE 
+                              'Substream)
+                         (FATBLOCK.PTYPE 
+                              'Fatblock)
+                         (THINBLOCK.PTYPE 
+                              'Thinblock)
+                         (OBJECT.PTYPE 'Object)
+                         (LOOKS.PTYPE 'Looks)
+                         NIL)
+                .TAB 41 .I4 PLEN (CL:IF (fetch (PIECE PPARALAST) of PC)
+                                     "* "
+                                     "  "))
+         (SELECTC PTYPE
+             (STRING.PTYPES (CL:WHEN (IGREATERP PLEN 0)
+                                (PRINTOUT T '%" (SUBSTRING PCONTENTS 1 PLEN)
+                                       '%")))
+             (OBJECT.PTYPE (PRINTOUT T PCONTENTS " ")
+                           (SPPRINT.OBJ PCONTENTS))
+             (FOR I FROM 1 TO PLEN FIRST (PRIN1 '%" T)
+                DO (PRIN1 (CHARACTER (SELECTC PTYPE
+                                         (THINFILE.PTYPE 
+                                              (BIN PCONTENTS))
+                                         (FATFILE1.PTYPE 
+                                              (LOGOR PCHARSET (BIN PCONTENTS)))
+                                         (FATFILE2.PTYPE 
+                                              (LOGOR (UNFOLD (BIN PCONTENTS)
+                                                            256)
+                                                     (BIN PCONTENTS)))
+                                         (FATBLOCK.PTYPE 
+                                              (\GETBASEFAT PCONTENTS (SUB1 I)))
+                                         (THINBLOCK.PTYPE 
+                                              (\GETBASEBYTE PCONTENTS (SUB1 I)))
+                                         (SHOULDNT)))
+                          T) FINALLY (PRIN1 '%" T)))
+         (TERPRI T))
+    PC])
+
+(SPPRINT.OBJ
+  [LAMBDA (OBJ)                                              (* ; "Edited  7-Sep-2022 15:21 by rmk")
+    (PRINTOUT T (SELECTQ (IMAGEOBJPROP OBJ 'DISPLAYFN)
+                    (MB.NB.DISPLAYFN 
+                         (IMAGEOBJPROP OBJ 'BUTTONS))
+                    ((MB.THREESTATE.DISPLAY \TEXTMENU.TOGGLE.DISPLAY MB.DISPLAY) 
+                         (IMAGEOBJPROP OBJ 'MBTEXT))
+                    (MB.DISPLAY (IMAGEOBJPROP OBJ 'MBTEXT))
+                    (IMAGEOBJPROP OBJ 'DISPLAYFN])
+
+(TRY
+  [LAMBDA (FILE VAR KEEPOPEN)                                (* ; "Edited  5-Sep-2022 18:48 by rmk")
+                                                             (* ; "Edited  1-Sep-2022 22:43 by rmk")
+                                                             (* ; "Edited 10-Aug-2022 13:12 by rmk")
+                                                             (* ; "Edited  1-Aug-2022 21:30 by rmk")
+    (CL:UNLESS VAR
+        (SETQ VAR 'TSTR))
+    (LET [(TSTREAM (AND (BOUNDP VAR)
+                        (TEXTSTREAMP (EVAL VAR]
+         (CL:WHEN (AND TSTREAM (OPENWP (WFROMDS TSTREAM)))
+             (CL:UNLESS KEEPOPEN
+                 (CLOSEW (WFROMDS TSTREAM))))
+         (SETQ TSTREAM (OPENTEXTSTREAM (SELECTQ FILE
+                                           (NIL '{LI}FEW.TXT)
+                                           (T '{LI}LOTS.TXT)
+                                           FILE)))
+         (TEDIT TSTREAM (CREATEREGION 817 900 397 80)
+                NIL
+                '(LEAVETTY T))
+         (SET VAR TSTREAM)
+         (PROG1 (ITS TSTREAM KEEPOPEN)
+                (CHECK-BTREE TSTREAM])
+
+(UPDATE-TEDIT
+  [LAMBDA (ASKFLAG FILES)                                    (* ; "Edited 19-Aug-2022 23:11 by rmk")
+                                                             (* ; "Edited 27-Jul-93 19:00 by rmk:")
+                                                             (* ; 
+                                                   "rmk: ' 5-Oct-87 09:38' posted: ' 3-AUG-81 22:55'")
+
+    (* ;; "updates sysout with new versions of compiled files.  If given T as an argument the user will be consulted whether to load, otherwise the update will be done automatically")
+
+    (LET (LOADFILES)
+         (SETQ LOADFILES (FOR X DIRFILE SYSOUTFILE FILE.COM IN (OR FILES TEDITFILES)
+                            WHEN [PROGN [SETQ SYSOUTFILE (OR (CDAR (CURRENTFILES X))
+                                                             (CAAR (CURRENTFILES X]
+                                        (SETQ FILE.COM (PACKFILENAME 'VERSION NIL 'BODY SYSOUTFILE))
+                                        (COND
+                                           ((NEQ SYSOUTFILE (SETQ DIRFILE (INFILEP FILE.COM)))
+                                            (PRINTOUT T X 15 "Dir: " DIRFILE 15 "Sysout: " SYSOUTFILE
+                                                   %,,)
+                                            (COND
+                                               (ASKFLAG (EQ (ASKUSER NIL NIL "Load? ")
+                                                            'Y))
+                                               (T (TERPRI T)
+                                                  T] COLLECT FILE.COM))
+         (FOR X IN LOADFILES DO (RELOAD X T])
+
+(CURRENTFILES
+  [LAMBDA (FILES)                                            (* ; "Edited  7-Aug-2022 08:55 by rmk")
+                                                             (* ; "Edited  3-May-93 21:13 by rmk:")
+                                                             (* ; 
+                                                   "jtm: '18-Jun-86 16:22' posted: ' 3-AUG-81 22:55'")
+
+    (* ;; 
+  "makes a list of consed pairs of the current versions, symbolic and compiled, in use in the sysout")
+
+    (FOR X INSIDE FILES COLLECT (CONS [CDR (CAR (GETP X 'FILEDATES]
+                                      (FOR F IN LOADEDFILELST
+                                         WHEN (AND (EQ X (FILENAMEFIELD F 'NAME))
+                                                   (MEMB (FILENAMEFIELD F 'EXTENSION)
+                                                         *COMPILED-EXTENSIONS*))
+                                         DO (RETURN F])
+
+(NTHPIECE
+  [LAMBDA (TSTREAM N)                                        (* ; "Edited  8-Aug-2022 08:52 by rmk")
+    (FOR [PC _ (\FIRSTPIECE (fetch PCTB (fetch TEXTOBJ of TSTREAM] by (fetch NEXTPIECE of PC)
+       as I FROM 1 while PC when (EQ I N) do (RETURN PC])
+
+(NPIECES
+  [LAMBDA (TSTREAM)                                          (* ; "Edited 21-Aug-2022 14:47 by rmk")
+                                                             (* ; "Edited  8-Aug-2022 08:52 by rmk")
+    (FOR [PC _ (\FIRSTPIECE (fetch PCTB (TEXTOBJ TSTREAM]
+         (CNT _ 0) by (fetch NEXTPIECE of PC) while PC do (ADD CNT 1) finally (RETURN CNT])
+
+(TRYMENU
+  [LAMBDA (SPEC)                                             (* ; "Edited 19-Aug-2022 21:56 by rmk")
+                                                             (* ; "Edited 17-Aug-2022 14:46 by rmk")
+    (CLOSEI)
+    (MYTEDITMENU (OR SPEC TESTSPEC])
+
+(PRINTSPEC
+  [LAMBDA (SPEC)                                             (* ; "Edited 14-Aug-2022 22:08 by rmk")
+    (FOR I FROM 1 AS S IN (OR SPEC TESTSPEC) DO (PRINTOUT T .I2 I " " .P2 S T])
+
+(PTMENU
+  [LAMBDA (MENUDESC)                                         (* ; "Edited 18-Aug-2022 08:28 by rmk")
+    (FOR I (CH# _ 1) FROM 1 AS DESC IN MENUDESC
+       DO (PRINTOUT T .I3 I " " .I4 CH# " " .P2 DESC T)
+          (ADD CH# (SELECTQ (CAR DESC)
+                       (MB.TEXT (NCHARS (CADR DESC)))
+                       (MB.INSERT 4)
+                       1])
+
+(MYTEDITMENU
+  [LAMBDA (MENUDESC MENUPROPS)                               (* ; "Edited  6-Sep-2022 19:57 by rmk")
+                                                             (* ; "Edited 17-Aug-2022 19:54 by rmk")
+                                                             (* ; "Edited 13-Aug-2022 23:11 by rmk")
+                                                             (* ; "Edited 31-Jan-2022 22:48 by rmk")
+                                                            (* ; "Edited 12-Jun-90 19:00 by mitani")
+
+    (* ;; "Create the TEXTSTREAM for a menu, given a description.  That stream is passed to \TEXTMENU.START to get the menu up on screen")
+
+    (PROG ((CH#1 NIL)
+           MENUTEXT)
+          [SETQ MENUTEXT (OPENTEXTSTREAM NIL NIL NIL NIL (OR MENUPROPS '(FONT (MODERN 10]
+          (BTVALIDATE 'MYTEDITMENU 'START MENUTEXT)
+          (SETQ LASTTS MENUTEXT)
+          (bind (CH# _ 1)
+                OBJ for DESC in MENUDESC
+             do (SELECTQ (CAR DESC)
+                    (* 
+                       (* ;; "This is a comment within a menu description -- Ignore it.")
+)
+                    (MB.BUTTON                               (* ; 
+                                                       "A menu button -- hitting it calls a function")
+                               (TEDIT.INSERT.OBJECT (MBUTTON.CREATE (MKATOM (fetch (MB.BUTTON MBLABEL
+                                                                                          )
+                                                                               of DESC))
+                                                           (fetch (MB.BUTTON MBBUTTONEVENTFN)
+                                                              of DESC)
+                                                           (fetch (MB.BUTTON MBFONT) of DESC))
+                                      MENUTEXT CH#)
+                               (TEDIT.LOOKS MENUTEXT '(PROTECTED OFF)
+                                      CH# 1)
+                               (add CH# 1))
+                    (MB.3STATE                               (* ; 
+                              "3-state button;  hitting it changes state among ON, OFF, and NEUTRAL.")
+                               (TEDIT.INSERT.OBJECT (MB.CREATE.THREESTATEBUTTON
+                                                     (MKATOM (fetch (MB.3STATE MBLABEL) of DESC))
+                                                     (fetch (MB.3STATE MBFONT) of DESC)
+                                                     (fetch (MB.3STATE MBCHANGESTATEFN) of DESC)
+                                                     (fetch (MB.3STATE MBINITSTATE) of DESC))
+                                      MENUTEXT CH#)
+                               (TEDIT.LOOKS MENUTEXT '(PROTECTED OFF)
+                                      CH# 1)
+                               (add CH# 1))
+                    (MB.TOGGLE                               (* ; 
+                                            "TOGGLE button;  hitting it switches between ON and OFF.")
+                               (TEDIT.INSERT.OBJECT (\TEXTMENU.TOGGLE.CREATE
+                                                     (MKATOM (fetch (MB.TOGGLE MBTEXT) of DESC))
+                                                     (fetch (MB.TOGGLE MBFONT) of DESC)
+                                                     (fetch (MB.TOGGLE MBCHANGESTATEFN) of DESC)
+                                                     (fetch (MB.TOGGLE MBINITSTATE) of DESC))
+                                      MENUTEXT CH#)
+                               (TEDIT.LOOKS MENUTEXT '(PROTECTED OFF)
+                                      CH# 1)
+                               (add CH# 1))
+                    (MB.NWAY                                 (* ; 
+                                                 "N-way buttons;  choosing one turns the others off.")
+                             (SETQ OBJ (MB.CREATE.NWAYBUTTON (fetch (MB.NWAY MBBUTTONS) of DESC)
+                                              (fetch (MB.NWAY MBFONT) of DESC)
+                                              (fetch (MB.NWAY MBCHANGESTATEFN) of DESC)
+                                              (fetch (MB.NWAY MBINITSTATE) of DESC)
+                                              (fetch (MB.NWAY MBMAXITEMSPERLINE) of DESC)))
+                             (TEDIT.INSERT.OBJECT OBJ MENUTEXT CH#)
+                             (TEDIT.LOOKS MENUTEXT '(PROTECTED OFF)
+                                    CH# 1)
+                             (add CH# 1))
+                    (MENU                                    (* ; 
+                                                             "Real menu, except the selection sticks")
+                          (TEDIT.INSERT.OBJECT (MB.CREATE.FULLMENU (CADR DESC))
+                                 MENUTEXT CH#)
+                          (TEDIT.LOOKS MENUTEXT '(PROTECTED OFF)
+                                 CH# 1)
+                          (add CH# 1))
+                    (MB.MARGINBAR                            (* ; "Margin ruler for TEdit formatting")
+                                  (TEDIT.INSERT.OBJECT (MARGINBAR.CREATE -0.5 -0.5 -39.5 NIL 12)
+                                         MENUTEXT CH#)
+                                  (TEDIT.LOOKS MENUTEXT '(PROTECTED OFF)
+                                         CH# 1)
+                                  (add CH# 1))
+                    (MB.TEXT                                 (* ; 
+                                             "Arbitrary text, which will be protected from the user.")
+                             (TEDIT.INSERT MENUTEXT (fetch (MB.TEXT MBSTRING) of DESC)
+                                    CH#)
+                             (CL:WHEN (fetch (MB.TEXT MBFONT) of DESC)
+                                 (TEDIT.LOOKS MENUTEXT (LIST 'MBFONT (fetch (MB.TEXT MBFONT)
+                                                                        of DESC))
+                                        CH#
+                                        (NCHARS (fetch (MB.TEXT MBSTRING) of DESC))))
+                             (TEDIT.LOOKS MENUTEXT '(PROTECTED ON)
+                                    CH#
+                                    (NCHARS (fetch (MB.TEXT MBSTRING) of DESC)))
+                             (add CH# (NCHARS (fetch (MB.TEXT MBSTRING) of DESC))))
+                    (MB.INSERT                               (* ; 
+                                                "An insertion point, with optional text to put there")
+                               (TEDIT.INSERT MENUTEXT "  {}" CH#)
+                               (CL:WHEN T
+                                   (TEDIT.LOOKS MENUTEXT '(PROTECTED ON)
+                                          CH# 4)
+                                   (TEDIT.LOOKS (fetch (TEXTSTREAM TEXTOBJ) of MENUTEXT)
+                                          '(PROTECTED ON SELECTPOINT ON)
+                                          (IPLUS CH# 2)
+                                          1))
+                               (OR CH#1 (SETQ CH#1 (IPLUS CH# 3)))
+                               [COND
+                                  ((fetch (MB.INSERT MBINITENTRY) of DESC)
+                                                             (* ; 
+                                                     "There is an initial entry to be made.  Make it")
+                                   [COND
+                                      ((IMAGEOBJP (fetch (MB.INSERT MBINITENTRY) of DESC))
+                                                             (* ; "It is an imageobj.")
+                                       (TEDIT.INSERT.OBJECT (fetch (MB.INSERT MBINITENTRY)
+                                                               of DESC)
+                                              MENUTEXT
+                                              (IPLUS CH# 3)))
+                                      (T                     (* ; "It's regular text.")
+                                         (TEDIT.INSERT MENUTEXT (MKSTRING (fetch (MB.INSERT 
+                                                                                        MBINITENTRY)
+                                                                             of DESC))
+                                                (IPLUS CH# 3]
+                                   [TEDIT.LOOKS MENUTEXT '(PROTECTED OFF SELECTPOINT OFF)
+                                          (IPLUS CH# 3)
+                                          (NCHARS (MKSTRING (fetch (MB.INSERT MBINITENTRY)
+                                                               of DESC]
+                                   (add CH# (NCHARS (fetch (MB.INSERT MBINITENTRY) of DESC]
+                               (add CH# 4))
+                    (\ILLEGAL.ARG DESC)))
+          (replace (TEXTOBJ MENUFLG) of (fetch (TEXTSTREAM TEXTOBJ) of MENUTEXT) with T)
+                                                             (* ; "Remember that this is a menu")
+          (CL:WHEN CH#1                                      (* ; 
+                            "We actually inserted some text, so it makes sense to put up a selection")
+              (push (fetch (TEXTOBJ EDITPROPS) of (fetch (TEXTSTREAM TEXTOBJ) of MENUTEXT))
+                    (LIST 'SEL CH#1)))                       (* ; 
+                                                           "And where the first selection should be.")
+          (BTVALIDATE 'MYTEDITMENU 'END MENUTEXT)
+          (RETURN MENUTEXT])
+
+(TEDITCLOSEW
+  [LAMBDA NIL                                                (* ; "Edited  1-Sep-2022 22:52 by rmk")
+    (LET ((W (WHICHW)))
+         (CL:WHEN (MEMB 'TEDIT.DEACTIVATE.WINDOW (WINDOWPROP W 'CLOSEFN))
+             [WINDOWPROP W 'CLOSEFN (REMOVE 'TEDIT.DEACTIVATE.WINDOW (WINDOWPROP W 'CLOSEFN]
+             (CLOSEW W))])
+)
+(DEFINEQ
+
+(UPDATE-TEDIT
+  [LAMBDA (ASKFLAG FILES)                                    (* ; "Edited 19-Aug-2022 23:11 by rmk")
+                                                             (* ; "Edited 27-Jul-93 19:00 by rmk:")
+                                                             (* ; 
+                                                   "rmk: ' 5-Oct-87 09:38' posted: ' 3-AUG-81 22:55'")
+
+    (* ;; "updates sysout with new versions of compiled files.  If given T as an argument the user will be consulted whether to load, otherwise the update will be done automatically")
+
+    (LET (LOADFILES)
+         (SETQ LOADFILES (FOR X DIRFILE SYSOUTFILE FILE.COM IN (OR FILES TEDITFILES)
+                            WHEN [PROGN [SETQ SYSOUTFILE (OR (CDAR (CURRENTFILES X))
+                                                             (CAAR (CURRENTFILES X]
+                                        (SETQ FILE.COM (PACKFILENAME 'VERSION NIL 'BODY SYSOUTFILE))
+                                        (COND
+                                           ((NEQ SYSOUTFILE (SETQ DIRFILE (INFILEP FILE.COM)))
+                                            (PRINTOUT T X 15 "Dir: " DIRFILE 15 "Sysout: " SYSOUTFILE
+                                                   %,,)
+                                            (COND
+                                               (ASKFLAG (EQ (ASKUSER NIL NIL "Load? ")
+                                                            'Y))
+                                               (T (TERPRI T)
+                                                  T] COLLECT FILE.COM))
+         (FOR X IN LOADFILES DO (RELOAD X T])
+
+(CURRENTFILES
+  [LAMBDA (FILES)                                            (* ; "Edited  7-Aug-2022 08:55 by rmk")
+                                                             (* ; "Edited  3-May-93 21:13 by rmk:")
+                                                             (* ; 
+                                                   "jtm: '18-Jun-86 16:22' posted: ' 3-AUG-81 22:55'")
+
+    (* ;; 
+  "makes a list of consed pairs of the current versions, symbolic and compiled, in use in the sysout")
+
+    (FOR X INSIDE FILES COLLECT (CONS [CDR (CAR (GETP X 'FILEDATES]
+                                      (FOR F IN LOADEDFILELST
+                                         WHEN (AND (EQ X (FILENAMEFIELD F 'NAME))
+                                                   (MEMB (FILENAMEFIELD F 'EXTENSION)
+                                                         *COMPILED-EXTENSIONS*))
+                                         DO (RETURN F])
+
+(EDIT-TEDIT
+  [LAMBDA NIL                                                (* ; "Edited 14-Sep-2022 08:37 by rmk")
+    (BKSYSBUF " ")
+    (CL:UNLESS (GETP 'EXPORTS.ALL 'FILE)
+        (DOFILESLOAD 'EXPORTS.ALL))
+    (DOFILESLOAD 'TEDIT-EXPORTS.ALL)
+
+    (* ;; "TEDIT-TFBRAVO isn't in the main list, but we want to track it")
+
+    (RESETLST
+        (RESETSAVE LOADDBFLG 'YES)
+        (FOR F IN TEDITFILES DO (LOADCOMP F)
+                                (LOADFROM F)))
+    (%. ANALYZE ON IN TEDITFILES])
+
+(MAKE-TEDIT-EXPORTS.ALL
+  [LAMBDA NIL                                                (* ; "Edited 11-Sep-2022 23:43 by rmk")
+    (CNDIR (MEDLEYDIR "library>tedit"))
+    (GATHEREXPORTS TEDITFILES (MEDLEYDIR "library/tedit" "tedit-exports.all" T])
+)
+(DEFINEQ
+
+(SHOWTHISLINE
+  [LAMBDA (THISLINE)                                         (* ; "Edited 14-Sep-2022 13:17 by rmk")
+                                                             (* ; "Edited  7-Sep-2022 15:52 by rmk")
+    (CL:UNLESS (type? THISLINE THISLINE)
+        (SETQ THISLINE (fetch (TEXTOBJ THISLINE) of (TEXTOBJ THISLINE))))
+    (PRINTOUT T THISLINE ":  Length = " (FETCH (THISLINE LEN) OF THISLINE)
+           T)
+    (CL:WHEN (TYPE? TEXTOBJ THISLINE)
+        (SETQ THISLINE (fetch (TEXTOBJ THISLINE) OF THISLINE)))
+    (for I C CHARS from 0 to (SUB1 (FETCH (THISLINE LEN) OF THISLINE))
+       first (SETQ CHARS (fetch CHARS OF THISLINE))
+       do (SETQ C (ELT CHARS I))
+          (CL:WHEN (EQ C 0)
+                 (RETURN I))
+          (IF (IMAGEOBJP C)
+              THEN (PRINTOUT T T C ": ")
+                   (SPPRINT.OBJ C)
+                   (TERPRI T)
+            ELSEIF (EQ C 400)
+              then 
+                   (* ;; "400 signals a looks change")
+
+                   (PRINTOUT T "<LC>")
+            ELSE (BOUT T C])
+
+(INSPECTLINES
+  [LAMBDA (TEXTOBJ)                                          (* ; "Edited  9-Sep-2022 21:44 by rmk")
+    (SETQ TEXTOBJ (TEXTOBJ TEXTOBJ))
+    (INSPECT/TOP/LEVEL/LIST (CONS (fetch THISLINE OF TEXTOBJ)
+                                  (FOR (L _ (CAR (FETCH LINES OF TEXTOBJ)))
+                                     by (FETCH NEXTLINE OF L) while L collect L])
+)
+
+(RPAQ? LASTTS NIL)
+
+(RPAQ? TINY '((MB.INSERT NIL)
+              (MB.TEXT "6" NIL)
+              (MB.TEXT "7" NIL)
+              (MB.TEXT "8" NIL)))
+
+(RPAQ? SMALL
+       '((MB.BUTTON "Quit" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672)
+         (MB.TEXT "1" NIL)
+         (MB.BUTTON "Page Layout" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672)
+         (MB.TEXT "2" NIL)
+         (MB.BUTTON "Char Looks" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672)
+         (MB.TEXT "3" NIL)
+         (MB.BUTTON "Para Looks" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672)
+         (MB.TEXT "4" NIL)
+         (MB.BUTTON "All" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672)
+         (MB.TEXT "5" NIL)
+         (MB.TOGGLE "Unformatted" {FONTDESCRIPTOR}#147,134672 \TEDITMENU.RECORD.UNFORMATTED NIL)
+         (MB.TEXT "
+" NIL)
+         (MB.BUTTON "Get" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672)
+         (MB.INSERT NIL)
+         (MB.TEXT "6" NIL)
+         (MB.BUTTON "Put" MB.DEFAULTBUTTON.FN {FONTDESCRIPTOR}#147,134672)))
+
+(RPAQ? TESTSPEC TEDIT.EXPANDEDMENU.SPEC)
+(DEFINEQ
+
+(PFOT
+  [NLAMBDA (FN)                                              (* ; "Edited 10-Sep-2022 16:13 by rmk")
+                                                             (* ; "Edited  9-Aug-2022 22:36 by rmk")
+                                                             (* ; "Edited  6-Aug-2022 13:13 by rmk")
+    (APPLY (FUNCTION PF)
+           (LIST FN (OTFILES FN])
+
+(DFOT
+  [NLAMBDA (FN FILE)                                         (* ; "Edited 10-Sep-2022 16:15 by rmk")
+                                                             (* ; "Edited  6-Sep-2022 23:35 by rmk")
+                                                             (* ; "Edited  4-Sep-2022 20:57 by rmk")
+                                                             (* ; "Edited  9-Aug-2022 22:37 by rmk")
+                                                             (* ; "Edited  8-Aug-2022 16:17 by rmk")
+                                                             (* ; "Edited  7-Aug-2022 00:08 by rmk")
+    (LET [FILEPKGFLG (FNOT (PACK* FN '-OT]
+         (COPYDEF FN FNOT 'FNS (OTFILES FN FILE))
+         (EDITDEF.FNS FNOT NIL '(:DONTWAIT])
+
+(OTFILES
+  [LAMBDA (FN FILE)                                          (* ; "Edited 10-Sep-2022 16:57 by rmk")
+    (FOR F INSIDE (OR FILE (WHEREIS FN 'FNS T))
+       COLLECT (SETQ F (SELECTQ F
+                           ((TEDIT-STREAM TEDIT-TEXTOFD) 
+                                'TEXTOFD)
+                           (TEDIT 'TEDIT)
+                           (TEDIT-PCTREE 'PCTREE)
+                           (IF (STRPOS "TEDIT-" F 1 NIL T)
+                               THEN (PACK* 'TEDIT (SUBSTRING F 7))
+                             ELSEIF (STRPOS "TEDIT" F 1 NIL T)
+                               THEN (PACK* 'TEDIT- (SUBSTRING F 6))
+                             ELSE F)))
+             (PACKFILENAME 'HOST '{OT} 'NAME F])
+)
+
+(PSEUDOHOST 'OT (MEDLEYDIR "../oldtedit/"))
+
+(CL:UNLESS (GETP 'FULLER.DATABASE 'FILE)
+       (FULLDB))
+(DECLARE%: DONTEVAL@LOAD DOEVAL@COMPILE DONTCOPY COMPILERVARS 
+
+(ADDTOVAR NLAMA )
+
+(ADDTOVAR NLAML DFOT PFOT)
+
+(ADDTOVAR LAMA )
+)
+(DECLARE%: DONTCOPY
+  (FILEMAP (NIL (2521 24735 (ITS 2531 . 3466) (SP 3468 . 4881) (SPPRINT 4883 . 8421) (SPPRINT.OBJ 8423
+ . 8941) (TRY 8943 . 10096) (UPDATE-TEDIT 10098 . 11792) (CURRENTFILES 11794 . 12793) (NTHPIECE 12795
+ . 13117) (NPIECES 13119 . 13535) (TRYMENU 13537 . 13821) (PRINTSPEC 13823 . 14046) (PTMENU 14048 . 
+14453) (MYTEDITMENU 14455 . 24388) (TEDITCLOSEW 24390 . 24733)) (24736 28230 (UPDATE-TEDIT 24746 . 
+26440) (CURRENTFILES 26442 . 27441) (EDIT-TEDIT 27443 . 27969) (MAKE-TEDIT-EXPORTS.ALL 27971 . 28228))
+ (28231 29826 (SHOWTHISLINE 28241 . 29399) (INSPECTLINES 29401 . 29824)) (30909 32901 (PFOT 30919 . 
+31318) (DFOT 31320 . 32125) (OTFILES 32127 . 32899)))))
+STOP

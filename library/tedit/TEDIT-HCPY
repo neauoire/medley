@@ -1,20 +1,18 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED "14-Jul-2022 16:55:47" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-HCPY.;1 102257 
+(FILECREATED "13-Sep-2022 12:37:13" 
+{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-HCPY.;12 101557 
 
-      :PREVIOUS-DATE "14-Jul-2022 11:08:01" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>library>newtedit>TEDIT-HCPY.;2)
+      :CHANGES-TO (VARS TEDIT-HCPYCOMS)
+
+      :PREVIOUS-DATE " 9-Sep-2022 17:11:26" 
+{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-HCPY.;11)
 
 
 (PRETTYCOMPRINT TEDIT-HCPYCOMS)
 
 (RPAQQ TEDIT-HCPYCOMS
-       ((FILES TEDIT-DCL)
-        (DECLARE%: EVAL@COMPILE DONTCOPY (CONSTANTS (\SCRATCHLEN 64))
-               (FILES (LOADCOMP)
-                      TEDIT-DCL))
-        (COMS 
+       ((COMS 
               (* ;; "Generic interface functions and common code")
 
               (FNS TEDIT.HARDCOPY TEDIT.HCPYFILE \TEDIT.HARDCOPY.DISPLAYLINE 
@@ -59,21 +57,6 @@
               (* ;; "Support for hardcopying several files as one document")
 
               (FNS TEDIT-BOOK))))
-
-(FILESLOAD TEDIT-DCL)
-(DECLARE%: EVAL@COMPILE DONTCOPY 
-(DECLARE%: EVAL@COMPILE 
-
-(RPAQQ \SCRATCHLEN 64)
-
-
-(CONSTANTS (\SCRATCHLEN 64))
-)
-
-
-(FILESLOAD (LOADCOMP)
-       TEDIT-DCL)
-)
 
 
 
@@ -334,6 +317,11 @@
 
 (\TEDIT.HARDCOPY.FORMATLINE
   [LAMBDA (TEXTOBJ WIDTH CH#1 THISLINE LINE IMAGESTREAM DOINGHEADING? PAGEINFO)
+                                                             (* ; "Edited  9-Sep-2022 17:11 by rmk")
+                                                             (* ; "Edited  8-Aug-2022 15:06 by rmk")
+                                                             (* ; "Edited  1-Aug-2022 21:44 by rmk")
+                                                             (* ; "Edited 30-Jul-2022 11:14 by rmk")
+                                                             (* ; "Edited 28-Jul-2022 13:06 by rmk")
                                                             (* ; "Edited 28-Jun-2021 12:34 by rmk:")
 
 (* ;;; "Given a starting place, format the next line of text.  Return T if a control-L was seen on the line.")
@@ -353,9 +341,9 @@
            (%#BLANKS 0)
            (DEVICE IMAGESTREAM)
            (KERN NIL)
-           TX DX TXB CH FORCEEND T1SPACE TXB1 DXB LOOK#B FONT FONTWIDTHS TERMSA CLOOKS TEXTSTREAM 
-           CHLIST WLIST LOOKS ASCENTB DESCENTB INVISIBLERUNSB TABPENDING BOX PC PCNO CTRL\L\SEEN 
-           1STLN FMTSPEC NEWASCENT NEWDESCENT PREVHYPH PREVDHYPH ORIGCHLIST ORIGWLIST)
+           TX DX TXB CH FORCEEND T1SPACE TXB1 DXB LOOK#B FONT FONTWIDTHS TERMSA CLOOKS TSTREAM CHLIST
+           WLIST LOOKS ASCENTB DESCENTB INVISIBLERUNSB TABPENDING BOX PC CTRL\L\SEEN 1STLN FMTSPEC 
+           NEWASCENT NEWDESCENT PREVHYPH PREVDHYPH ORIGCHLIST ORIGWLIST)
 
      (* ;; "Variables:")
 
@@ -393,9 +381,9 @@
           [SETQ ORIGWLIST (SETQ WLIST (fetch (ARRAYP BASE) of (fetch (THISLINE WIDTHS) of THISLINE]
                                                              (* ; "Place to put width of each item")
           (SETQ LOOKS (fetch LOOKS of THISLINE))
-          (SETQ TEXTSTREAM (fetch (TEXTOBJ STREAMHINT) of TEXTOBJ))
+          (SETQ TSTREAM (fetch (TEXTOBJ STREAMHINT) of TEXTOBJ))
           (SETQ TERMSA (fetch (TEXTOBJ TXTTERMSA) of TEXTOBJ))
-          (replace LOOKSUPDATEFN of TEXTSTREAM with (FUNCTION \TEDIT.HCPYLOOKS.UPDATE))
+          (replace LOOKSUPDATEFN of TSTREAM with (FUNCTION \TEDIT.HCPYLOOKS.UPDATE))
                                                              (* ; 
               "This gets called every time we cross a piece boundary, to check for changes in looks.")
           (freplace (LINEDESCRIPTOR CHARLIM) of LINE with TEXTLEN)
@@ -417,14 +405,14 @@
                                                 "Only continue if there's really text we can format.")
                   (\SETUPGETCH CH#1 TEXTOBJ)                 (* ; "Starting place")
                                                              (* ; "And starting character looks")
-                  (SETQ CLOOKS (fetch (TEXTSTREAM CURRENTLOOKS) of TEXTSTREAM))
+                  (SETQ CLOOKS (fetch (TEXTSTREAM CURRENTLOOKS) of TSTREAM))
                   [COND
                      ((fetch (CHARLOOKS CLINVISIBLE) of CLOOKS)
                                                              (* ; 
          "We've hit a run of invisible characters.  Skip them, and insert a marker in the line cache")
                       (add LOOKNO 1)                         (* ; 
                                                              "Fix the counter of charlooks changes")
-                      (SETQ PC (fetch (TEXTSTREAM PIECE) of TEXTSTREAM))
+                      (SETQ PC (fetch (TEXTSTREAM PIECE) of TSTREAM))
                       (\EDITSETA LOOKS LOOKNO (SETQ INVISIBLERUNS (fetch (PIECE PLEN) of PC)))
                       (\RPLPTR CHLIST 0 401)
                       (\RPLPTR WLIST 0 0)
@@ -445,16 +433,12 @@
                       (COND
                          (PC                                 (* ; 
                                                            "Move us to the right place in the stream")
-                             (\SETUPGETCH (create EDITMARK
-                                                 PC _ PC
-                                                 PCOFF _ 0
-                                                 PCNO _ NIL)
-                                    TEXTOBJ))
+                             (\INSTALL.PIECE TSTREAM PC 0))
                          (T                                  (* ; 
               "We've walked off the end of the document.  Just note that we're not at any piece now.")
-                            (replace (TEXTSTREAM PIECE) of TEXTSTREAM with NIL]
+                            (replace (TEXTSTREAM PIECE) of TSTREAM with NIL]
                   (ILEQ CHNO TEXTLEN)))
-              (\TEDIT.HCPYLOOKS.UPDATE TEXTSTREAM (fetch (TEXTSTREAM PIECE) of TEXTSTREAM)
+              (\TEDIT.HCPYLOOKS.UPDATE TSTREAM (fetch (TEXTSTREAM PIECE) of TSTREAM)
                      CLOOKS)
               (SETQ ASCENTB ASCENT)
               (SETQ DESCENTB DESCENT)
@@ -467,7 +451,7 @@
                                                              "Keep the font around for char widths.")
               (SETQ FMTSPEC (\TEDIT.HCPYFMTSPEC (\TEDIT.APPLY.PARASTYLES (OR (fetch (TEXTSTREAM
                                                                                      CURRENTPARALOOKS
-                                                                                     ) of TEXTSTREAM)
+                                                                                     ) of TSTREAM)
                                                                              (fetch (TEXTOBJ FMTSPEC)
                                                                                 of TEXTOBJ))
                                                        PC TEXTOBJ)
@@ -481,17 +465,15 @@
                   (SETQ *TEDIT-CURRENTPARA-CACHE* NIL)
                   (SETQ *TEDIT-CACHED-FMTSPEC* FMTSPEC)))
               [SETQ 1STLN (OR (IEQP CH#1 1)
-                              (AND (fetch (TEXTSTREAM PIECE) of TEXTSTREAM)
-                                   (fetch (PIECE PREVPIECE) of (fetch (TEXTSTREAM PIECE) of 
-                                                                                           TEXTSTREAM
-                                                                      ))
+                              (AND (fetch (TEXTSTREAM PIECE) of TSTREAM)
+                                   (fetch (PIECE PREVPIECE) of (fetch (TEXTSTREAM PIECE) of TSTREAM))
                                    (fetch (PIECE PPARALAST) of (fetch (PIECE PREVPIECE)
                                                                   of (fetch (TEXTSTREAM PIECE)
-                                                                        of TEXTSTREAM)))
-                                   (IEQP (fetch (TEXTSTREAM PCSTARTCH) of TEXTSTREAM)
-                                         (fetch (STREAM COFFSET) of TEXTSTREAM))
-                                   (IEQP (fetch (TEXTSTREAM PCSTARTPG) of TEXTSTREAM)
-                                         (fetch (STREAM CPAGE) of TEXTSTREAM]
+                                                                        of TSTREAM)))
+                                   (IEQP (fetch (TEXTSTREAM PCSTARTCH) of TSTREAM)
+                                         (fetch (STREAM COFFSET) of TSTREAM))
+                                   (IEQP (fetch (TEXTSTREAM PCSTARTPG) of TSTREAM)
+                                         (fetch (STREAM CPAGE) of TSTREAM]
                                                              (* ; 
                                                            "Are we on the first line of a paragraph?")
               (replace (LINEDESCRIPTOR 1STLN) of LINE with 1STLN)
@@ -500,7 +482,7 @@
           "This is a new paragraph.  Check for special paragraph types, and handle them accordingly.")
                   (SELECTQ (fetch (FMTSPEC FMTPARATYPE) of FMTSPEC)
                       (PAGEHEADING                           (* ; "This paragraph is the content for a page heading.  Handle it, then don't bother formatting further.")
-                                   (TEDIT.HARDCOPY.PAGEHEADING TEXTOBJ TEXTSTREAM LINE FMTSPEC CHNO 
+                                   (TEDIT.HARDCOPY.PAGEHEADING TEXTOBJ TSTREAM LINE FMTSPEC CHNO 
                                           IMAGESTREAM)
 
                                    (* ;; "This will capture the text, and set LINE:CHARLIM to the LAST char# in the page heading.  That lets formatting continue apace.")
@@ -509,14 +491,13 @@
                       (EVEN                                  (* ; "This paragraph may or may not belong here.  If this is an odd page, we don't want to format this paragraph.")
                             (COND
                                ((ODDP (fetch (PAGEFORMATTINGSTATE PAGE#) of FORMATTINGSTATE))
-                                (TEDIT.SKIP.SPECIALCOND TEXTOBJ TEXTSTREAM LINE FMTSPEC CHNO 
-                                       IMAGESTREAM)
+                                (TEDIT.SKIP.SPECIALCOND TEXTOBJ TSTREAM LINE FMTSPEC CHNO IMAGESTREAM
+                                       )
                                 (RETURN NIL))))
                       (ODD                                   (* ; "This paragraph may or may not belong here.  If this is an even page, we don't want to format this paragraph.")
                            (COND
                               ((EVENP (fetch (PAGEFORMATTINGSTATE PAGE#) of FORMATTINGSTATE))
-                               (TEDIT.SKIP.SPECIALCOND TEXTOBJ TEXTSTREAM LINE FMTSPEC CHNO 
-                                      IMAGESTREAM)
+                               (TEDIT.SKIP.SPECIALCOND TEXTOBJ TSTREAM LINE FMTSPEC CHNO IMAGESTREAM)
                                (RETURN NIL))))
                       NIL)))
               [SETQ TX (replace (LINEDESCRIPTOR LEFTMARGIN) of LINE
@@ -531,8 +512,8 @@
                                      (T WIDTH]               (* ; 
                                                          "RIGHTMAR = 0 => follow the window's width.")
               (SETQ TXB1 WIDTH)
-              (for old TLEN from TLEN to 511 as old CHNO from CHNO while (ILEQ CHNO TEXTLEN)
-                 when (SETQ CH (\BIN TEXTSTREAM))
+              (bind NOMORECHARACTERS for old TLEN from TLEN to 511 as old CHNO from CHNO
+                 while (ILEQ CHNO TEXTLEN) when (SETQ CH (BIN TSTREAM)) unless NOMORECHARACTERS
                  do                                          (* ; "(The WHILE is there because we may reset TEXTLEN within the loop, and TO TEXTLEN only evaluates it once.)")
 
                  (* ;; "The character loop")
@@ -602,7 +583,7 @@
                            (freplace (LINEDESCRIPTOR CR\END) of LINE with T)
                            (SETQ TX (IPLUS TX DX))
                            (replace (LINEDESCRIPTOR LSTLN) of LINE
-                              with (fetch (PIECE PPARALAST) of (fetch PIECE of TEXTSTREAM)))
+                              with (fetch (PIECE PPARALAST) of (fetch PIECE of TSTREAN)))
                            (SETQ PREVDHYPH NIL)
                            (SETQ PREVHYPH NIL)               (* ; 
               "We're now past needing any hyphens for line breaking, so forget the last hyphen spot.")
@@ -685,7 +666,7 @@
                                  (* ;; 
                            "Character-set change character.  This suggests undetected NS characters.")
 
-                                 (\TEDIT.NSCHAR.RUN CHNO TEXTOBJ TEXTSTREAM)
+                                 (\TEDIT.NSCHAR.RUN CHNO TEXTOBJ TSTREAM)
                                                              (* ; 
                                                     "Leaves us ready to BIN again at the same place.")
 
@@ -918,15 +899,14 @@
                "No text to go in this line;  set Ascent/Descent to the default font from the window.")
                 (SETQ FMTSPEC (\TEDIT.HCPYFMTSPEC (fetch (TEXTOBJ FMTSPEC) of TEXTOBJ)))
                 (\EDITSETA LOOKS 0 CLOOKS)
-                [SETQ 1STLN (AND (fetch (STREAM F5) of TEXTSTREAM)
-                                 (fetch (PIECE PREVPIECE) of (fetch (STREAM F5) of TEXTSTREAM))
+                [SETQ 1STLN (AND (fetch (STREAM F5) of TSTREAM)
+                                 (fetch (PIECE PREVPIECE) of (fetch (STREAM F5) of TSTREAM))
                                  (fetch (PIECE PPARALAST) of (fetch (PIECE PREVPIECE)
-                                                                of (fetch (STREAM F5) of TEXTSTREAM))
-                                        )
-                                 (IEQP (fetch (STREAM FW6) of TEXTSTREAM)
-                                       (fetch (STREAM CPAGE) of TEXTSTREAM))
-                                 (IEQP (fetch (STREAM FW7) of TEXTSTREAM)
-                                       (fetch (STREAM COFFSET) of TEXTSTREAM]
+                                                                of (fetch (STREAM F5) of TSTREAM)))
+                                 (IEQP (fetch (STREAM FW6) of TSTREAM)
+                                       (fetch (STREAM CPAGE) of TSTREAM))
+                                 (IEQP (fetch (STREAM FW7) of TSTREAM)
+                                       (fetch (STREAM COFFSET) of TSTREAM]
                 (replace (LINEDESCRIPTOR 1STLN) of LINE with 1STLN)
                 [SETQ TX (SETQ TXB (replace (LINEDESCRIPTOR LEFTMARGIN) of LINE
                                       with (COND
@@ -960,19 +940,20 @@
           (freplace (LINEDESCRIPTOR LXLIM) of LINE with TX)
           (freplace DESC of THISLINE with LINE)
           [freplace (THISLINE LEN) of THISLINE
-             with (IMIN 254 (COND
-                               ((ILESSP TEXTLEN CH#1)
-                                -1)
-                               (T (IPLUS LOOKNO (IDIFFERENCE (IMIN (fetch (LINEDESCRIPTOR CHARLIM)
-                                                                      of LINE)
-                                                                   TEXTLEN)
-                                                       (IPLUS INVISIBLERUNS (fetch (LINEDESCRIPTOR
-                                                                                    CHAR1)
-                                                                               of LINE]
+             with (IMIN (- (FOLDLO LineArraySize 2)
+                           2)
+                        (COND
+                           ((ILESSP TEXTLEN CH#1)
+                            -1)
+                           (T (IPLUS LOOKNO (IDIFFERENCE (IMIN (fetch (LINEDESCRIPTOR CHARLIM)
+                                                                  of LINE)
+                                                               TEXTLEN)
+                                                   (IPLUS INVISIBLERUNS (fetch (LINEDESCRIPTOR CHAR1)
+                                                                           of LINE]
           (freplace (LINEDESCRIPTOR SPACELEFT) of LINE with (IDIFFERENCE WIDTH TXB1))
           (\DOFORMATTING.HARDCOPY TEXTOBJ LINE FMTSPEC THISLINE %#BLANKS PREVSP 1STLN)
           (replace (LINEDESCRIPTOR LFMTSPEC) of LINE with FMTSPEC)
-          (replace LOOKSUPDATEFN of TEXTSTREAM with NIL)
+          (replace LOOKSUPDATEFN of TSTREAM with NIL)
           (RETURN CTRL\L\SEEN])
 
 (\DOFORMATTING.HARDCOPY
@@ -1191,7 +1172,9 @@
     (MOVETO CURX CURY PRSTREAM])
 
 (\TEDIT.HCPYLOOKS.UPDATE
-  [LAMBDA (STREAM PC NLOOKS)                                 (* ; 
+  [LAMBDA (STREAM PC NLOOKS)                                 (* ; "Edited  6-Aug-2022 15:55 by rmk")
+                                                             (* ; "Edited 30-Jul-2022 11:13 by rmk")
+                                                             (* ; 
                                                         "Edited  3-Jul-93 20:12 by sybalskY:MV:ENVOS")
 
     (* ;; "At a piece boundary, update the line formatting fields ASCENT, DESCENT, and FONTWIDTHS")
@@ -1199,140 +1182,129 @@
     (* ;; "Also, KERN, if USERPROPS has a KERN entry.")
 
     (DECLARE (USEDFREE LOOKS ASCENT DESCENT FONTWIDTHS FONT INVISIBLERUNS CHNO TLEN LOOKNO CHLIST 
-                    WLIST DEVICE NEWASCENT NEWDESCENT KERN IMAGESTREAM))
-    (COND
-       (PC (PROG ((TEXTOBJ (fetch (TEXTSTREAM TEXTOBJ) of STREAM))
-                  TLOOKS TEMP NEWPC OFFSET PARALOOKS PREVPC NEWKERN)
-                 [COND
-                    ([OR (NOT (fetch (PIECE PREVPIECE) of PC))
-                         (NEQ (fetch (PIECE PPARALOOKS) of PC)
-                              (fetch (PIECE PPARALOOKS) of (fetch (PIECE PREVPIECE) of PC]
+                    WLIST DEVICE NEWASCENT NEWDESCENT KERN IMAGESTREAM NOMORECHARACTERS))
+    (CL:WHEN PC
+        (PROG ((TEXTOBJ (fetch (TEXTSTREAM TEXTOBJ) of STREAM))
+               TLOOKS TEMP NEWPC OFFSET PARALOOKS PREVPC NEWKERN)
+              [COND
+                 ([OR (NOT (fetch (PIECE PREVPIECE) of PC))
+                      (NEQ (fetch (PIECE PPARALOOKS) of PC)
+                           (fetch (PIECE PPARALOOKS) of (fetch (PIECE PREVPIECE) of PC]
                                                              (* ; 
   "The paragraph looks have changed between the last piece and this one.  Take account of the change")
-                     (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS) of PC)
-                                            PC TEXTOBJ))
-                     (replace (TEXTSTREAM CURRENTPARALOOKS) of STREAM with PARALOOKS))
-                    (T (SETQ PARALOOKS (fetch (TEXTSTREAM CURRENTPARALOOKS) of STREAM]
-                 (SETQ TLOOKS (OR NLOOKS (\TEDIT.APPLY.STYLES (ffetch (PIECE PLOOKS) of PC)
-                                                PC TEXTOBJ)))
-                 (COND
-                    ((fetch (CHARLOOKS CLINVISIBLE) of TLOOKS)
+                  (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS) of PC)
+                                         PC TEXTOBJ))
+                  (replace (TEXTSTREAM CURRENTPARALOOKS) of STREAM with PARALOOKS))
+                 (T (SETQ PARALOOKS (fetch (TEXTSTREAM CURRENTPARALOOKS) of STREAM]
+              (SETQ TLOOKS (OR NLOOKS (\TEDIT.APPLY.STYLES (ffetch (PIECE PLOOKS) of PC)
+                                             PC TEXTOBJ)))
+              (CL:WHEN (fetch (CHARLOOKS CLINVISIBLE) of TLOOKS)
                                                              (* ; 
          "We've hit a run of invisible characters.  Skip them, and insert a marker in the line cache")
-                     (add LOOKNO 1)                          (* ; 
+                  (add LOOKNO 1)                             (* ; 
                                                              "Fix the counter of charlooks changes")
-                     (\EDITSETA LOOKS LOOKNO (fetch (PIECE PLEN) of PC))
-                     (\RPLPTR CHLIST 0 LMInvisibleRun)
-                     (\RPLPTR WLIST 0 0)
-                     (add TLEN 1)
-                     (SETQ CHLIST (\ADDBASE CHLIST 2))
-                     (SETQ WLIST (\ADDBASE WLIST 2))
-                     (SETQ PREVPC PC)
-                     (SETQ PC (fetch (PIECE NEXTPIECE) of PC))
-                     (COND
-                        ((NEQ (fetch (PIECE PPARALOOKS) of PC)
-                              (fetch (PIECE PPARALOOKS) of PREVPC))
-                         (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS)
-                                                                     of PC)
-                                                PC TEXTOBJ))
-                         (replace (TEXTSTREAM CURRENTPARALOOKS) of STREAM with PARALOOKS)))
-                     (SETQ TLOOKS (AND PC (\TEDIT.APPLY.STYLES (ffetch (PIECE PLOOKS) of PC)
-                                                 PC TEXTOBJ)))
-                     [while (AND PC (OR (ZEROP (fetch (PIECE PLEN) of PC))
-                                        (fetch (CHARLOOKS CLINVISIBLE) of TLOOKS)))
-                        do (\EDITSETA LOOKS LOOKNO (IPLUS (fetch (PIECE PLEN) of PC)
-                                                          (\EDITELT LOOKS LOOKNO)))
-                           (SETQ PREVPC PC)
-                           (SETQ PC (fetch (PIECE NEXTPIECE) of PC))
-                           (COND
-                              ((AND PC (NEQ (fetch (PIECE PPARALOOKS) of PC)
-                                            (fetch (PIECE PPARALOOKS) of PREVPC)))
+                  (\EDITSETA LOOKS LOOKNO (fetch (PIECE PLEN) of PC))
+                  (\RPLPTR CHLIST 0 LMInvisibleRun)
+                  (\RPLPTR WLIST 0 0)
+                  (add TLEN 1)
+                  (SETQ CHLIST (\ADDBASE CHLIST 2))
+                  (SETQ WLIST (\ADDBASE WLIST 2))
+                  (SETQ PREVPC PC)
+                  (SETQ PC (fetch (PIECE NEXTPIECE) of PC))
+                  (CL:UNLESS (EQ (fetch (PIECE PPARALOOKS) of PC)
+                                 (fetch (PIECE PPARALOOKS) of PREVPC))
+                      (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS) of PC)
+                                             PC TEXTOBJ))
+                      (replace (TEXTSTREAM CURRENTPARALOOKS) of STREAM with PARALOOKS))
+                  (SETQ TLOOKS (AND PC (\TEDIT.APPLY.STYLES (ffetch (PIECE PLOOKS) of PC)
+                                              PC TEXTOBJ)))
+                  [while (AND PC (OR (ZEROP (fetch (PIECE PLEN) of PC))
+                                     (fetch (CHARLOOKS CLINVISIBLE) of TLOOKS)))
+                     do (\EDITSETA LOOKS LOOKNO (IPLUS (fetch (PIECE PLEN) of PC)
+                                                       (\EDITELT LOOKS LOOKNO)))
+                        (SETQ PREVPC PC)
+                        (SETQ PC (fetch (PIECE NEXTPIECE) of PC))
+                        (CL:WHEN (AND PC (NEQ (fetch (PIECE PPARALOOKS) of PC)
+                                              (fetch (PIECE PPARALOOKS) of PREVPC)))
                                                              (* ; 
      "If there IS new text, and the paragraph looks have changed, update the streams notion of them.")
-                               (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS)
-                                                                           of PC)
-                                                      PC TEXTOBJ))
+                            (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS)
+                                                                        of PC)
+                                                   PC TEXTOBJ))
                                                              (* ; 
                                                           "And take care of style sheets on the way.")
-                               (replace (TEXTSTREAM CURRENTPARALOOKS) of STREAM with PARALOOKS)))
-                           (SETQ TLOOKS (AND PC (\TEDIT.APPLY.STYLES (ffetch (PIECE PLOOKS)
-                                                                        of PC)
-                                                       PC TEXTOBJ]
-                     (add CHNO (\EDITELT LOOKS LOOKNO))
-                     (add INVISIBLERUNS (\EDITELT LOOKS LOOKNO))
-                     (SETQ NEWPC PC)))
-                 (COND
-                    ([AND PC (OR NLOOKS (NOT (EQCLOOKS TLOOKS (fetch (TEXTSTREAM CURRENTLOOKS)
-                                                                 of STREAM]
-                     (replace (TEXTSTREAM CURRENTLOOKS) of STREAM with TLOOKS)
-                     (replace (TEXTSTREAM CURRENTPARALOOKS) of STREAM with PARALOOKS)
-                     (SETQ FONT (fetch (CHARLOOKS CLFONT) of TLOOKS))
-                     [SETQ FONT (COND
-                                   ((AND (type? FONTCLASS FONT)
-                                         (FONTCLASSCOMPONENT FONT DEVICE)))
-                                   (T (FONTCOPY FONT 'DEVICE DEVICE]
-                     (SETQ OFFSET (OR [AND (fetch (CHARLOOKS CLOFFSET) of TLOOKS)
-                                           (FIXR (FTIMES (DSPSCALE NIL DEVICE)
-                                                        (fetch (CHARLOOKS CLOFFSET) of TLOOKS]
-                                      0))
-                     (SETQ NEWASCENT (IMAX ASCENT (IPLUS (fetch \SFAscent of FONT)
-                                                         OFFSET)))
-                     (SETQ NEWDESCENT (IMAX DESCENT (IDIFFERENCE (fetch \SFDescent of FONT)
-                                                           OFFSET)))
-                     (SETQ NEWKERN (LISTGET (fetch (CHARLOOKS CLUSERINFO) of TLOOKS)
-                                          'KERN))
-                     (COND
-                        [NEWKERN (SETQ KERN (FIXR (FTIMES (DSPSCALE NIL DEVICE)
-                                                         NEWKERN]
-                        (T (SETQ KERN NIL)))
-                     (COND
-                        ((NOT NLOOKS)
+                            (replace (TEXTSTREAM CURRENTPARALOOKS) of STREAM with PARALOOKS))
+                        (SETQ TLOOKS (AND PC (\TEDIT.APPLY.STYLES (ffetch (PIECE PLOOKS) of PC)
+                                                    PC TEXTOBJ]
+                  (add CHNO (\EDITELT LOOKS LOOKNO))
+                  (add INVISIBLERUNS (\EDITELT LOOKS LOOKNO))
+                  (SETQ NEWPC PC))
+              (COND
+                 ([AND PC (OR NLOOKS (NOT (EQCLOOKS TLOOKS (fetch (TEXTSTREAM CURRENTLOOKS)
+                                                              of STREAM]
+                  (replace (TEXTSTREAM CURRENTLOOKS) of STREAM with TLOOKS)
+                  (replace (TEXTSTREAM CURRENTPARALOOKS) of STREAM with PARALOOKS)
+                  (SETQ FONT (fetch (CHARLOOKS CLFONT) of TLOOKS))
+                  (SETQ FONT (CL:UNLESS (AND (type? FONTCLASS FONT)
+                                             (FONTCLASSCOMPONENT FONT DEVICE))
+                                 (FONTCOPY FONT 'DEVICE DEVICE)))
+                  (SETQ OFFSET (OR [AND (fetch (CHARLOOKS CLOFFSET) of TLOOKS)
+                                        (FIXR (FTIMES (DSPSCALE NIL DEVICE)
+                                                     (fetch (CHARLOOKS CLOFFSET) of TLOOKS]
+                                   0))
+                  (SETQ NEWASCENT (IMAX ASCENT (IPLUS (fetch \SFAscent of FONT)
+                                                      OFFSET)))
+                  (SETQ NEWDESCENT (IMAX DESCENT (IDIFFERENCE (fetch \SFDescent of FONT)
+                                                        OFFSET)))
+                  (SETQ NEWKERN (LISTGET (fetch (CHARLOOKS CLUSERINFO) of TLOOKS)
+                                       'KERN))
+                  (COND
+                     [NEWKERN (SETQ KERN (FIXR (FTIMES (DSPSCALE NIL DEVICE)
+                                                      NEWKERN]
+                     (T (SETQ KERN NIL)))
+                  (CL:UNLESS NLOOKS
 
-                         (* ;; "If we're calling this to initialize values, don't go and update the running cache.  However, since NLOOKS is NIL, we're not initializing, so go to it!")
+                      (* ;; "If we're calling this to initialize values, don't go and update the running cache.  However, since NLOOKS is NIL, we're not initializing, so go to it!")
 
-                         (add LOOKNO 1)                      (* ; 
+                      (add LOOKNO 1)                         (* ; 
                                                              "Fix the counter of charlooks changes")
-                         (\EDITSETA LOOKS LOOKNO TLOOKS)     (* ; 
+                      (\EDITSETA LOOKS LOOKNO TLOOKS)        (* ; 
                                                            "Save the new looks for selection/display")
-                         (\RPLPTR CHLIST 0 LMLooksChange)    (* ; 
+                      (\RPLPTR CHLIST 0 LMLooksChange)       (* ; 
                                         "Put a marker in the character list to denote a looks change")
-                         (\RPLPTR WLIST 0 0)                 (* ; "Font changes have no width")
-                         (add TLEN 1)
-                         (SETQ CHLIST (\ADDBASE CHLIST 2))
-                         (SETQ WLIST (\ADDBASE WLIST 2))     (* ; 
+                      (\RPLPTR WLIST 0 0)                    (* ; "Font changes have no width")
+                      (add TLEN 1)
+                      (SETQ CHLIST (\ADDBASE CHLIST 2))      (* ; 
                                                          "Account for the dummy marker/looks in TLEN")
-                         ))
-                     (SETQ NEWPC PC))
-                    ((NOT (OR PC NLOOKS))                    (* ; 
+                      (SETQ WLIST (\ADDBASE WLIST 2)))
+                  (SETQ NEWPC PC))
+                 ((NOT (OR PC NLOOKS))                       (* ; 
   "We have run off the end of the document.  Bail out so that \TEDIT.HARDCOPY.FORMATLINE doesn't die")
-                     (RETFROM '\BIN NIL)))
-                 (OR NEWPC (SETQ NEWPC PC))
-                 [COND
-                    ((AND (fetch (PIECE POBJ) of NEWPC)
-                          (NEQ (fetch (PIECE PLEN) of NEWPC)
-                               1))                           (* ; 
+                  (SETQ NOMORECHARACTERS T)
+                  (RETURN)))
+              (CL:UNLESS NEWPC (SETQ NEWPC PC))
+              (CL:WHEN (AND (EQ OBJECT.PTYPE (ffetch (PIECE PTYPE) of NEWPC))
+                            (NEQ (fetch (PIECE PLEN) of NEWPC)
+                                 1))                         (* ; 
                                         "If this piece is for an object, check for a length mismatch")
-                     (COND
-                        ((IMAGEOBJPROP (fetch (PIECE POBJ) of NEWPC)
-                                'SUBSTREAM))
-                        (T 
-                           (* ;; "The object is several chars wide, but doesn't have a subsidiary stream to pull those chars from.  Build an invisible run to fill the space.")
+                  (CL:UNLESS (IMAGEOBJPROP (fetch (PIECE PCONTENTS) of NEWPC)
+                                    'SUBSTREAM)
 
-                           (add LOOKNO 1)                    (* ; 
+                      (* ;; "The object is several chars wide, but doesn't have a subsidiary stream to pull those chars from.  Build an invisible run to fill the space.")
+
+                      (add LOOKNO 1)                         (* ; 
                                                              "Fix the counter of charlooks changes")
-                           (\EDITSETA LOOKS LOOKNO (SUB1 (fetch (PIECE PLEN) of PC)))
-                           (\RPLPTR CHLIST 0 LMInvisibleRun) (* ; 
+                      (\EDITSETA LOOKS LOOKNO (SUB1 (fetch (PIECE PLEN) of PC)))
+                      (\RPLPTR CHLIST 0 LMInvisibleRun)      (* ; 
                                          "Note the existence of an invisible run of characters here.")
-                           (\RPLPTR WLIST 0 0)
-                           (add TLEN 1)
-                           (SETQ CHLIST (\ADDBASE CHLIST 2))
-                           (SETQ WLIST (\ADDBASE WLIST 2))
-                           (add CHNO (\EDITELT LOOKS LOOKNO))
-                           (add INVISIBLERUNS (\EDITELT LOOKS LOOKNO))
-                                                             (* ; 
+                      (\RPLPTR WLIST 0 0)
+                      (add TLEN 1)
+                      (SETQ CHLIST (\ADDBASE CHLIST 2))
+                      (SETQ WLIST (\ADDBASE WLIST 2))
+                      (add CHNO (\EDITELT LOOKS LOOKNO))     (* ; 
                                                 "Keep track of how much invisible text we cross over")
-                           ]
-                 (RETURN NEWPC])
+                      (add INVISIBLERUNS (\EDITELT LOOKS LOOKNO))))
+              (RETURN NEWPC)))])
 
 (\TEDIT.HCPYFMTSPEC
   [LAMBDA (SPEC IMAGESTREAM)                                 (* ; "Edited 30-May-91 21:18 by jds")
@@ -1544,11 +1516,11 @@
          (CLOSEF DOC])
 )
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (3705 96172 (TEDIT.HARDCOPY 3715 . 4731) (TEDIT.HCPYFILE 4733 . 6660) (
-\TEDIT.HARDCOPY.DISPLAYLINE 6662 . 20176) (\TEDIT.HARDCOPY.FORMATLINE 20178 . 65510) (
-\DOFORMATTING.HARDCOPY 65512 . 78584) (\TEDIT.HARDCOPY.MODIFYLOOKS 78586 . 80933) (
-\TEDIT.HCPYLOOKS.UPDATE 80935 . 90952) (\TEDIT.HCPYFMTSPEC 90954 . 95497) (\TEDIT.INTEGER.IMAGEBOX 
-95499 . 96170)) (96261 97345 (\TEDIT.SCALE 96271 . 96565) (\TEDIT.SCALEREGION 96567 . 97343)) (97588 
-100153 (TEDIT.HARDCOPYFN 97598 . 98509) (\TEDIT.HARDCOPY 98511 . 99424) (\TEDIT.PRESS.HARDCOPY 99426
- . 100151)) (101433 102234 (TEDIT-BOOK 101443 . 102232)))))
+  (FILEMAP (NIL (3395 95472 (TEDIT.HARDCOPY 3405 . 4421) (TEDIT.HCPYFILE 4423 . 6350) (
+\TEDIT.HARDCOPY.DISPLAYLINE 6352 . 19866) (\TEDIT.HARDCOPY.FORMATLINE 19868 . 65199) (
+\DOFORMATTING.HARDCOPY 65201 . 78273) (\TEDIT.HARDCOPY.MODIFYLOOKS 78275 . 80622) (
+\TEDIT.HCPYLOOKS.UPDATE 80624 . 90252) (\TEDIT.HCPYFMTSPEC 90254 . 94797) (\TEDIT.INTEGER.IMAGEBOX 
+94799 . 95470)) (95561 96645 (\TEDIT.SCALE 95571 . 95865) (\TEDIT.SCALEREGION 95867 . 96643)) (96888 
+99453 (TEDIT.HARDCOPYFN 96898 . 97809) (\TEDIT.HARDCOPY 97811 . 98724) (\TEDIT.PRESS.HARDCOPY 98726 . 
+99451)) (100733 101534 (TEDIT-BOOK 100743 . 101532)))))
 STOP

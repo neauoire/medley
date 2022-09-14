@@ -1,10 +1,12 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED "14-Jul-2022 16:55:49" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-LOOKS.;1 161854 
+(FILECREATED "13-Sep-2022 12:37:00" 
+{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-LOOKS.;43 171116 
 
-      :PREVIOUS-DATE "14-Jul-2022 11:12:19" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>library>newtedit>TEDIT-LOOKS.;3)
+      :CHANGES-TO (VARS TEDIT-LOOKSCOMS)
+
+      :PREVIOUS-DATE "11-Sep-2022 21:26:35" 
+{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-LOOKS.;40)
 
 
 (PRETTYCOMPRINT TEDIT-LOOKSCOMS)
@@ -13,10 +15,10 @@
        [
         (* ;; "Support for Character looks (font, italic/bold, sub/superscripting, etc) and paragraph looks (margins, centered/justified, tabs, etc.)")
 
-        (FILES TEDIT-DCL)
-        (DECLARE%: EVAL@COMPILE DONTCOPY (CONSTANTS (\SCRATCHLEN 64))
-               (FILES (LOADCOMP)
-                      TEDIT-DCL))
+        (DECLARE%: EVAL@COMPILE DONTCOPY (EXPORT (RECORDS CHARLOOKS FMTSPEC PENDINGTAB)
+                                                (MACROS \EDITELT \EDITSETA \WORDSETA)
+                                                (MACROS \SMALLPIN \SMALLPOUT ONOFF)))
+        (INITRECORDS CHARLOOKS FMTSPEC PENDINGTAB)
         [DECLARE%: DONTEVAL@LOAD DOCOPY (VARS (TEDIT.TERMSA.FONTS NIL)
                                               (TEDIT.DEFAULT.CHARLOOKS (CHARLOOKS.FROM.FONT 
                                                                               DEFAULTFONT))
@@ -97,21 +99,311 @@
 "Support for Character looks (font, italic/bold, sub/superscripting, etc) and paragraph looks (margins, centered/justified, tabs, etc.)"
 )
 
-
-(FILESLOAD TEDIT-DCL)
 (DECLARE%: EVAL@COMPILE DONTCOPY 
+(* "FOLLOWING DEFINITIONS EXPORTED")(DECLARE%: EVAL@COMPILE
+
+(DATATYPE CHARLOOKS (
+                     (* ;; "Describes the appearance (%"Looks%") of characters in a TEdit document.")
+
+                     CLFONT                                  (* ; 
+                                                           "The font descriptor for these characters")
+                     CLNAME
+
+                     (* ;; "Name of the font (e.g., HELVETICA) THIS FIELD IS A HINT, OR FOR USE IN CHARLOOKS-BUILDING CODE.  USE FONTPROP TO GET THE RIGHT VALUE FROM CLFONT.")
+
+                     CLSIZE                                  (* ; "Font size, in points")
+                     (CLITAL FLAG)                           (* ; 
+                                                           "T if the characters are italic, else NIL")
+                     (CLBOLD FLAG)                           (* ; 
+                                                             "T if the characters are bold, else NIL")
+                     (CLULINE FLAG)                          (* ; 
+                                                "T if the characters are to be underscored, else NIL")
+                     (CLOLINE FLAG)                          (* ; 
+                                                 "T if the characters are to be overscored, else NIL")
+                     (CLSTRIKE FLAG)                         (* ; 
+                                               "T if the characters are to be struck thru, else nil.")
+                     CLOFFSET                                (* ; 
+                         "A superscripting offset in points (?) else NIL (SUBSCRIPTING IF NEGATIVE.)")
+                     (CLSMALLCAP FLAG)                       (* ; "T if small caps, else NIL")
+                     (CLINVERTED FLAG)                       (* ; 
+                                                 "T if the characters are to be shown white-on-black")
+                     (CLPROTECTED FLAG)                      (* ; 
+                                                             "T if chars can't be selected, else NIL")
+                     (CLINVISIBLE FLAG)                      (* ; 
+                                                     "T if TEDIT is to ignore these chars;  else NIL")
+                     (CLSELHERE FLAG)
+
+                     (* ;; "T if TEDIT can put selection after this char (for menu blanks) else NIL;  anything typed after this char will NOT BE PROTECTED.")
+
+                     (CLCANCOPY FLAG)
+
+                     (* ;; "T if this text can be selected for copying, even tho protected (it will become unprotected after the copy;  for Dribble/TTY interface)")
+
+                     CLSTYLE                                 (* ; 
+                  "The style to be used in marking these characters;  overridden by the other fields")
+                     CLUSERINFO                              (* ; 
+                                                  "Any information that an outsider wants to include")
+                     CLLEADER                                (* ; 
+                                                      "For creating dotted and other kinds of leader")
+                     CLRULES
+
+                     (* ;; "For arbitrarily-places horizontal rules.  List of pairs, of (widthinpts  . offsetfrombaselineinpts).  Should be taken account of in ascent/descent calcs.")
+
+                     (CLMARK FLAG)
+
+                     (* ;; "Used for a mark-&-sweep of looks at PUT time -- T means this set of looks really IS in use in the document")
+
+                     )
+                    CLOFFSET _ 0)
+
+(DATATYPE FMTSPEC (
+                   (* ;; "Describe the paragraph formatting for a paragraph in a TEdit document.")
+
+                   1STLEFTMAR                                (* ; 
+                                                     "Left margin of the first line of the paragraph")
+                   LEFTMAR                                   (* ; 
+                                              "Left margin of the rest of the lines in the paragraph")
+                   RIGHTMAR                                  (* ; "Right margin for the paragraph")
+                   LEADBEFORE                                (* ; 
+                                                "Leading above the paragraph's first line, in points")
+                   LEADAFTER                                 (* ; 
+                            "Leading below the paragraph's bottom line, in points.  NOT IMPLEMENTED.")
+                   LINELEAD                                  (* ; 
+      "Leading between lines, in points.  Actually, this space is added BELOW each line in the para.")
+                   FMTBASETOBASE                             (* ; 
+ "The baseline-to-baseline spacing between lines in this paragraph.  THIS OVERRIDES THE LINE LEADING")
+                   TABSPEC                                   (* ; 
+                         "The list of tabs for this paragraph, including CAR for a default tab width")
+                   QUAD                                      (* ; 
+                                 "How the para is formatted: one of LEFT, RIGHT, CENTERED, JUSTIFIED")
+                   FMTSTYLE                                  (* ; 
+                                                "The STYLE that controls this paragraph's appearance")
+                   FMTCHARSTYLES                             (* ; "The characterstyles that control the appearance of characters in this para (maybe?  may be part of the fmtstyle.)")
+                   FMTUSERINFO                               (* ; "Space for a PLIST of user info")
+                   FMTSPECIALX                               (* ; 
+                                   "A special horizontal location on the printed page for this para.")
+                   FMTSPECIALY                               (* ; 
+                                              "A special vertical location on the page for this para")
+                   (FMTHEADINGKEEP FLAG)                     (* ; 
+                                "This para should be kept with the top line or so of the next para..")
+                   FMTPARATYPE                               (* ; 
+                                             "What kind of para this is: TEXT, PAGEHEADING, whatever")
+                   FMTPARASUBTYPE                            (* ; 
+                                     "Sub type of the type, e.g., what KIND of page heading this is.")
+                   FMTNEWPAGEBEFORE                          (* ; "Start a new box (if T) or back up the page formatting tree to make a new box of the type named in the value -- by going the least distance back up the tree, then back down until you find that kind of box.")
+                   FMTNEWPAGEAFTER                           (* ; "Similarly")
+                   FMTKEEP                                   (* ; 
+                      "For information about how this paragraph is to be kept with other paragraphs.")
+                   FMTCOLUMN                                 (* ; 
+                                           "For setting up side-by-side paragraphs easily ala BravoX")
+                   FMTVERTRULES                              (* ; 
+                                                       "For Keeping track of vertical rules in force")
+                   (FMTMARK FLAG)                            (* ; "Used to keep track of which PARALOOKSs are really being used -- a mark & collect is done just before a PUT, so that only 'real' PARALOOKSs make it into the file")
+                                                             (* ; "Used for a mark&sweep of para looks at PUT time -- T means this looks really IS in use in the document, so it makes sense to save it on the file.")
+                   (FMTHARDCOPY FLAG)                        (* ; 
+                                         "T if this paragraph is to be displayed in hardcopy-format.")
+                   FMTREVISED                                (* ; "T (or perhaps a revision level or revision-mark spec??) if this paragraph is to be marked as changed on output.")
+                   )
+                  TABSPEC _ (CONS NIL NIL))
+
+(DATATYPE PENDINGTAB (
+                      (* ;; "The data structure for a tab, within the line formatter, that we haven't finished dealing with yet, e.g. a centered tab where you need to wait for AFTER the centered text to do the formatting.")
+
+                      PTNEWTX
+
+                      (* ;; "An updated TX, being passed back to the line formatter.  This results from the resolution of an old RIGHT, CENTERED, or DECIMAL tab, which changed the width of a prior tab.")
+
+                      PTOLDTAB                               (* ; "The pending tab")
+                      PTTYPE                                 (* ; "Its tab type")
+                      PTTABX                                 (* ; "Its nominal X position")
+                      (PTWBASE FULLXPOINTER)                 (* ; 
+            "The WBASE for its width, for updating when we've figured out how wide the tab really is")
+                      PTOLDTX                                (* ; 
+                                                         "The TX as of when the tab was encountered.")
+                      ))
+)
+
+(/DECLAREDATATYPE 'CHARLOOKS
+       '(POINTER POINTER POINTER FLAG FLAG FLAG FLAG FLAG POINTER FLAG FLAG FLAG FLAG FLAG FLAG 
+               POINTER POINTER POINTER POINTER FLAG)
+       '((CHARLOOKS 0 POINTER)
+         (CHARLOOKS 2 POINTER)
+         (CHARLOOKS 4 POINTER)
+         (CHARLOOKS 4 (FLAGBITS . 0))
+         (CHARLOOKS 4 (FLAGBITS . 16))
+         (CHARLOOKS 4 (FLAGBITS . 32))
+         (CHARLOOKS 4 (FLAGBITS . 48))
+         (CHARLOOKS 2 (FLAGBITS . 0))
+         (CHARLOOKS 6 POINTER)
+         (CHARLOOKS 6 (FLAGBITS . 0))
+         (CHARLOOKS 6 (FLAGBITS . 16))
+         (CHARLOOKS 6 (FLAGBITS . 32))
+         (CHARLOOKS 6 (FLAGBITS . 48))
+         (CHARLOOKS 2 (FLAGBITS . 16))
+         (CHARLOOKS 2 (FLAGBITS . 32))
+         (CHARLOOKS 8 POINTER)
+         (CHARLOOKS 10 POINTER)
+         (CHARLOOKS 12 POINTER)
+         (CHARLOOKS 14 POINTER)
+         (CHARLOOKS 14 (FLAGBITS . 0)))
+       '16)
+
+(/DECLAREDATATYPE 'FMTSPEC
+       '(POINTER POINTER POINTER POINTER POINTER POINTER POINTER POINTER POINTER POINTER POINTER 
+               POINTER POINTER POINTER FLAG POINTER POINTER POINTER POINTER POINTER POINTER POINTER 
+               FLAG FLAG POINTER)
+       '((FMTSPEC 0 POINTER)
+         (FMTSPEC 2 POINTER)
+         (FMTSPEC 4 POINTER)
+         (FMTSPEC 6 POINTER)
+         (FMTSPEC 8 POINTER)
+         (FMTSPEC 10 POINTER)
+         (FMTSPEC 12 POINTER)
+         (FMTSPEC 14 POINTER)
+         (FMTSPEC 16 POINTER)
+         (FMTSPEC 18 POINTER)
+         (FMTSPEC 20 POINTER)
+         (FMTSPEC 22 POINTER)
+         (FMTSPEC 24 POINTER)
+         (FMTSPEC 26 POINTER)
+         (FMTSPEC 26 (FLAGBITS . 0))
+         (FMTSPEC 28 POINTER)
+         (FMTSPEC 30 POINTER)
+         (FMTSPEC 32 POINTER)
+         (FMTSPEC 34 POINTER)
+         (FMTSPEC 36 POINTER)
+         (FMTSPEC 38 POINTER)
+         (FMTSPEC 40 POINTER)
+         (FMTSPEC 40 (FLAGBITS . 0))
+         (FMTSPEC 40 (FLAGBITS . 16))
+         (FMTSPEC 42 POINTER))
+       '44)
+
+(/DECLAREDATATYPE 'PENDINGTAB '(POINTER POINTER POINTER POINTER FULLXPOINTER POINTER)
+       '((PENDINGTAB 0 POINTER)
+         (PENDINGTAB 2 POINTER)
+         (PENDINGTAB 4 POINTER)
+         (PENDINGTAB 6 POINTER)
+         (PENDINGTAB 8 FULLXPOINTER)
+         (PENDINGTAB 10 POINTER))
+       '12)
 (DECLARE%: EVAL@COMPILE 
 
-(RPAQQ \SCRATCHLEN 64)
+(PUTPROPS \EDITELT DMACRO (OPENLAMBDA (ARR NO)
 
+         (* This is equivalent to ELT, but bypasses the checking, since we "know" that ARR 
+         is an array. Hence, much faster.)
 
-(CONSTANTS (\SCRATCHLEN 64))
+                            (GETBASEPTR (\ADDBASE2 (fetch (ARRAYP BASE) of ARR)
+                                               NO)
+                                   0)))
+
+(PUTPROPS \EDITSETA DMACRO (OPENLAMBDA (ARR N VAL)
+
+         (* Equivalent to SETA (for pointer-type arrays)%, but bypasses the bounds and 
+         type checking. Hence MUCH faster.)
+
+                             (\RPLPTR (\ADDBASE2 (fetch (ARRAYP BASE) of ARR)
+                                             N)
+                                    0 VAL)))
+
+(PUTPROPS \WORDSETA DMACRO (OPENLAMBDA (A J V)
+                             [CHECK (AND (ARRAYP A)
+                                         (ZEROP (fetch (ARRAYP ORIG) of A))
+                                         (EQ \ST.POS16 (fetch (ARRAYP TYP) of A]
+                             (CHECK (IGREATERP (fetch (ARRAYP LENGTH) of A)
+                                           J))
+                             (\PUTBASE (fetch (ARRAYP BASE) of A)
+                                    (IPLUS (fetch (ARRAYP OFFST) of A)
+                                           J)
+                                    V)))
+)
+(DECLARE%: EVAL@COMPILE 
+
+(PUTPROPS \SMALLPIN MACRO (OPENLAMBDA (STREAM)
+                            (SIGNED (create WORD
+                                           HIBYTE _ (BIN STREAM)
+                                           LOBYTE _ (BIN STREAM))
+                                   BITSPERWORD)))
+
+(PUTPROPS \SMALLPOUT MACRO (OPENLAMBDA (STREAM W)
+                             (\BOUT STREAM (LOGAND 255 (LRSH W 8)))
+                             (\BOUT STREAM (LOGAND W 255))))
+
+(PUTPROPS ONOFF MACRO [OPENLAMBDA (VAL)
+                        (COND
+                           (VAL 'ON)
+                           (T 'OFF])
 )
 
+(* "END EXPORTED DEFINITIONS")
 
-(FILESLOAD (LOADCOMP)
-       TEDIT-DCL)
 )
+
+(/DECLAREDATATYPE 'CHARLOOKS
+       '(POINTER POINTER POINTER FLAG FLAG FLAG FLAG FLAG POINTER FLAG FLAG FLAG FLAG FLAG FLAG 
+               POINTER POINTER POINTER POINTER FLAG)
+       '((CHARLOOKS 0 POINTER)
+         (CHARLOOKS 2 POINTER)
+         (CHARLOOKS 4 POINTER)
+         (CHARLOOKS 4 (FLAGBITS . 0))
+         (CHARLOOKS 4 (FLAGBITS . 16))
+         (CHARLOOKS 4 (FLAGBITS . 32))
+         (CHARLOOKS 4 (FLAGBITS . 48))
+         (CHARLOOKS 2 (FLAGBITS . 0))
+         (CHARLOOKS 6 POINTER)
+         (CHARLOOKS 6 (FLAGBITS . 0))
+         (CHARLOOKS 6 (FLAGBITS . 16))
+         (CHARLOOKS 6 (FLAGBITS . 32))
+         (CHARLOOKS 6 (FLAGBITS . 48))
+         (CHARLOOKS 2 (FLAGBITS . 16))
+         (CHARLOOKS 2 (FLAGBITS . 32))
+         (CHARLOOKS 8 POINTER)
+         (CHARLOOKS 10 POINTER)
+         (CHARLOOKS 12 POINTER)
+         (CHARLOOKS 14 POINTER)
+         (CHARLOOKS 14 (FLAGBITS . 0)))
+       '16)
+
+(/DECLAREDATATYPE 'FMTSPEC
+       '(POINTER POINTER POINTER POINTER POINTER POINTER POINTER POINTER POINTER POINTER POINTER 
+               POINTER POINTER POINTER FLAG POINTER POINTER POINTER POINTER POINTER POINTER POINTER 
+               FLAG FLAG POINTER)
+       '((FMTSPEC 0 POINTER)
+         (FMTSPEC 2 POINTER)
+         (FMTSPEC 4 POINTER)
+         (FMTSPEC 6 POINTER)
+         (FMTSPEC 8 POINTER)
+         (FMTSPEC 10 POINTER)
+         (FMTSPEC 12 POINTER)
+         (FMTSPEC 14 POINTER)
+         (FMTSPEC 16 POINTER)
+         (FMTSPEC 18 POINTER)
+         (FMTSPEC 20 POINTER)
+         (FMTSPEC 22 POINTER)
+         (FMTSPEC 24 POINTER)
+         (FMTSPEC 26 POINTER)
+         (FMTSPEC 26 (FLAGBITS . 0))
+         (FMTSPEC 28 POINTER)
+         (FMTSPEC 30 POINTER)
+         (FMTSPEC 32 POINTER)
+         (FMTSPEC 34 POINTER)
+         (FMTSPEC 36 POINTER)
+         (FMTSPEC 38 POINTER)
+         (FMTSPEC 40 POINTER)
+         (FMTSPEC 40 (FLAGBITS . 0))
+         (FMTSPEC 40 (FLAGBITS . 16))
+         (FMTSPEC 42 POINTER))
+       '44)
+
+(/DECLAREDATATYPE 'PENDINGTAB '(POINTER POINTER POINTER POINTER FULLXPOINTER POINTER)
+       '((PENDINGTAB 0 POINTER)
+         (PENDINGTAB 2 POINTER)
+         (PENDINGTAB 4 POINTER)
+         (PENDINGTAB 6 POINTER)
+         (PENDINGTAB 8 FULLXPOINTER)
+         (PENDINGTAB 10 POINTER))
+       '12)
 (DECLARE%: DONTEVAL@LOAD DOCOPY 
 
 (RPAQQ TEDIT.TERMSA.FONTS NIL)
@@ -278,7 +570,8 @@
           NEWLOOKS])
 
 (TEDIT.CARETLOOKS
-  [LAMBDA (STREAM LOOKS)                                     (* ; "Edited 30-May-91 21:40 by jds")
+  [LAMBDA (STREAM LOOKS)                                     (* ; "Edited  8-Sep-2022 11:25 by rmk")
+                                                             (* ; "Edited 30-May-91 21:40 by jds")
 
     (* ;; "Set the 'Caret looks' for a TEdit document, i.e., the looks that will be applied to newly-typed characters from here on.")
 
@@ -292,16 +585,15 @@
                                                        TEXTOBJ))
                                  TEXTOBJ))                   (* ; 
                               "Parse up the looks he gave us, to make sure they're a valid CHARLOOKS")
-          (COND
-             ((NEQ CHARLOOKS (fetch (TEXTOBJ CARETLOOKS) of TEXTOBJ))
+          (CL:UNLESS (EQ CHARLOOKS (fetch (TEXTOBJ CARETLOOKS) of TEXTOBJ))
                                                              (* ; 
                                                  "Only change the caret looks if they really changed")
-              (replace (TEXTOBJ \INSERTPCVALID) of TEXTOBJ with NIL)
-                                                             (* ; "Changing the caret's looks means we can't type into the same piece any more.  Force the next insert to create a new one.")
-              (replace (TEXTOBJ CARETLOOKS) of TEXTOBJ with CHARLOOKS])
+              (replace (TEXTOBJ HINTPC) of TEXTOBJ with NIL) (* ; "Changing the caret's looks means we can't type into the same piece any more.  Force the next insert to create a new one.")
+              (replace (TEXTOBJ CARETLOOKS) of TEXTOBJ with CHARLOOKS))])
 
 (TEDIT.COPY.LOOKS
-  [LAMBDA (STREAM SOURCE DEST)                               (* ; "Edited 30-May-91 21:43 by jds")
+  [LAMBDA (STREAM SOURCE DEST)                               (* ; "Edited 22-Aug-2022 13:14 by rmk")
+                                                             (* ; "Edited 30-May-91 21:43 by jds")
 
     (* ;; "Copy the CHARACTER LOOKS of one piece of text (actually, the first selected character) to another piece of text")
 
@@ -309,17 +601,13 @@
            LOOKS LEN)                                        (* ; 
                                            "get the character looks of the first character of SOURCE")
           [SETQ LOOKS (fetch (PIECE PLOOKS) of (CL:TYPECASE SOURCE
-                                                   ((SMALLP FIXP) (\CHTOPC SOURCE (fetch (TEXTOBJ
-                                                                                          PCTB)
-                                                                                     of TEXTOBJ)))
+                                                   ((SMALLP FIXP) (\CHTOPC SOURCE TEXTOBJ))
                                                    (SELECTION 
                                                       (\SHOWSEL SOURCE NIL NIL)
                                                              (* ; 
                            "Turn off the source selection, so it doesn't hang around after the copy.")
                                                       (\CHTOPC (fetch (SELECTION CH#) of SOURCE)
-                                                             (fetch (TEXTOBJ PCTB)
-                                                                of (fetch (SELECTION \TEXTOBJ)
-                                                                      of SOURCE))))
+                                                             (fetch (SELECTION \TEXTOBJ) of SOURCE)))
                                                    (T (\ILLEGAL.ARG SOURCE)))]
           (COND
              [(type? SELECTION DEST)                         (* ; 
@@ -333,46 +621,50 @@
           (TEDIT.LOOKS TEXTOBJ LOOKS DEST LEN])
 
 (\TEDIT.GET.CHARLOOKS
-  [LAMBDA (PC FILE LOOKSARRAY PREVPC)                        (* ; "Edited 30-May-91 21:43 by jds")
+  [LAMBDA (PC FILE LOOKSARRAY PREVPC)                        (* ; "Edited  8-Sep-2022 23:04 by rmk")
+                                                             (* ; "Edited  3-Aug-2022 08:59 by rmk")
+                                                             (* ; "Edited  1-Aug-2022 12:04 by rmk")
+                                                             (* ; "Edited 30-May-91 21:43 by jds")
 
 (* ;;; "Set the PLOOKS for the current piece, PC, according to what the file says")
 
 (* ;;; "The PLEN field of this piece is the number of FILE BYTES taken to describe the piece.  This may need to be adjusted for fat pieces, and at fat/thin boundaries.  PREVPC is the previous piece, if any, so we can detect such boundaries.")
 
-    (PROG ((FLAGS (\BIN FILE)))
-          (COND
-             ((NOT (ZEROP (LOGAND FLAGS 1)))                 (* ; "This text is NEW.  Mark it so.")
-              (replace (PIECE PNEW) of PC with T)))
-          (COND
-             ((NOT (ZEROP (LOGAND FLAGS 2)))                 (* ; 
-                                                             "This text is FAT--16 bit characters.")
-              (replace (PIECE PFATP) of PC with T)))
-          (replace (PIECE PLOOKS) of PC with (ELT LOOKSARRAY (\SMALLPIN FILE)))
+    (LET ((FLAGS (BIN FILE)))
+         (CL:UNLESS (ZEROP (LOGAND FLAGS 1))                 (* ; "This text is NEW.  Mark it so.")
+             (replace (PIECE PNEW) of PC with T))
+         (replace (PIECE PTYPE) of PC with (if (ZEROP (LOGAND FLAGS 2))
+                                               then THINFILE.PTYPE
+                                             else 
+                                                  (* ;; "This text is FAT--16 bit characters.")
+
+                                                  FATFILE2.PTYPE))
+         (replace (PIECE PLOOKS) of PC with (ELT LOOKSARRAY (\SMALLPIN FILE)))
                                                              (* ; 
                                  "Look the looks up in the array we built according to specs earlier")
-          (COND
-             [(fetch (PIECE PFATP) of PC)                    (* ; 
+         (COND
+            [(EQ FATFILE2.PTYPE (PTYPE PC))                  (* ; 
                                                        "For a fat piece, convert bytes to characters")
-              (COND
-                 ((AND PREVPC (fetch (PIECE PFATP) of PREVPC))
-                  (replace (PIECE PLEN) of PC with (FOLDHI (FETCH (PIECE PLEN) OF PC)
-                                                          2)))
-                 (T                                          (* ; 
+             (COND
+                ((AND PREVPC (EQ FATFILE2.PTYPE (PTYPE PREVPC)))
+                 (replace (PIECE PLEN) of PC with (FOLDHI (PLEN PC)
+                                                         2)))
+                (T                                           (* ; 
            "The prior piece wasn't fat and this one is.  Take account of the 255-255-0 in the length")
-                    (replace (PIECE PLEN) of PC with (FOLDHI (IDIFFERENCE (fetch (PIECE PLEN)
-                                                                             of PC)
-                                                                    3)
-                                                            2))
-                    (add (fetch (PIECE PFPOS) of PC)
-                         3]
-             ((AND PREVPC (fetch (PIECE PFATP) of PREVPC))
+                   (CL:WHEN (EQ NSCHARSETSHIFT (\PEEKBIN FILE))
+                       (replace (PIECE PLEN) of PC with (FOLDHI (IDIFFERENCE (PLEN PC)
+                                                                       3)
+                                                               2))
+                       (add (fetch (PIECE PFPOS) of PC)
+                            3))]
+            ((AND PREVPC (EQ FATFILE2.PTYPE (PTYPE PREVPC)))
 
-              (* ;; "The prior piece was fat and this one isn't.  Take account of the 255-0 on the front of this piece's chars.")
+             (* ;; "The prior piece was fat and this one isn't.  Take account of the 255-0 on the front of this piece's chars.")
 
-              (replace (PIECE PLEN) of PC with (IDIFFERENCE (fetch (PIECE PLEN) of PC)
-                                                      2))
-              (add (fetch (PIECE PFPOS) of PC)
-                   2])
+             (replace (PIECE PLEN) of PC with (IDIFFERENCE (PLEN PC)
+                                                     2))
+             (add (fetch (PIECE PFPOS) of PC)
+                  2])
 
 (\TEDIT.UNPARSE.CHARLOOKS.LIST
   [LAMBDA (LOOKS)                                            (* ; "Edited 30-May-91 21:45 by jds")
@@ -461,32 +753,30 @@
                (RETURN (U-CASE NAME])
 
 (\TEDIT.PUT.CHARLOOKS
-  [LAMBDA (FILE CH1 CHLIM LOOKS OLDPC EDITSTENTATIVE LOOKSHARRAY PREVFATP)
+  [LAMBDA (FILE CH1 CHLIM LOOKS OLDPC EDITSTENTATIVE LOOKSHARRAY)
+                                                             (* ; "Edited  8-Sep-2022 22:54 by rmk")
                                                              (* ; "Edited 30-May-91 21:45 by jds")
 
     (* ;; "Put a description of LOOKS into FILE.  LOOKS apply to characters CH1 thru CHLIM-1")
 
-    (PROG ((FONT (fetch (CHARLOOKS CLFONT) of LOOKS))
-           STR)
-          (\DWOUT FILE (IDIFFERENCE CHLIM CH1))              (* ; "The length of this run of looks")
-          (\SMALLPOUT FILE \PieceDescriptorLOOKS)            (* ; 
+    (\DWOUT FILE (IDIFFERENCE CHLIM CH1))                    (* ; "The length of this run of looks")
+    (\SMALLPOUT FILE \PieceDescriptorLOOKS)                  (* ; 
                                                              "Mark this as setting the piece's looks")
-          [\BOUT FILE (LOGOR (COND
-                                ((AND EDITSTENTATIVE OLDPC (fetch (PIECE PNEW) of OLDPC))
+    [\BOUT FILE (LOGOR (COND
+                          ((AND EDITSTENTATIVE OLDPC (fetch (PIECE PNEW) of OLDPC))
                                                              (* ; 
                                                  "If this is a tentative edit, save the newness flag")
-                                 1)
-                                (T                           (* ; "Otherwise, don't bother")
-                                   0))
-                             (COND
-                                ((AND OLDPC (fetch (PIECE PFATP) of OLDPC))
+                           1)
+                          (T                                 (* ; "Otherwise, don't bother")
+                             0))
+                       (COND
+                          ((AND OLDPC (EQ FATFILE2.PTYPE (PTYPE OLDPC)))
                                                              (* ; 
                                          "If this piece contains fat characters, remember that fact.")
-                                 2)
-                                (T                           (* ; "Otherwise, don't bother")
-                                   0]
-          (\SMALLPOUT FILE (GETHASH LOOKS LOOKSHARRAY))      (* ; "The index into the list of fonts")
-      ])
+                           2)
+                          (T                                 (* ; "Otherwise, don't bother")
+                             0]                              (* ; "The index into the list of fonts")
+    (\SMALLPOUT FILE (GETHASH LOOKS LOOKSHARRAY])
 
 (\TEDIT.CARETLOOKS.VERIFY
   [LAMBDA (TEXTOBJ NEWLOOKS)                                 (* ; "Edited 30-May-91 21:41 by jds")
@@ -505,54 +795,38 @@
                         NEWLOOKS])
 
 (\TEDIT.GET.INSERT.CHARLOOKS
-  [LAMBDA (TEXTOBJ SEL)                                      (* ; "Edited 30-May-91 21:45 by jds")
+  [LAMBDA (TEXTOBJ SEL)                                      (* ; "Edited 22-Aug-2022 13:21 by rmk")
+                                                             (* ; "Edited 30-May-91 21:45 by jds")
 
-         (* Given a default source of charlooks, set us up some good ones.
-         IN particular, reset CLPROTECTED if need be.)
+    (* ;; "Given a default source of charlooks, set us up some good ones.  IN particular, reset CLPROTECTED if need be.")
 
-    (PROG ((PCTB (fetch (TEXTOBJ PCTB) of TEXTOBJ))
-           [CH# (IMAX 1 (IMIN (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ)
-                              (SELECTQ (fetch (SELECTION POINT) of SEL)
-                                  (LEFT (fetch (SELECTION CH#) of SEL))
-                                  (RIGHT (SUB1 (fetch (SELECTION CHLIM) of SEL)))
-                                  (SHOULDNT]
-           PCNO PIECE LOOKS)
-          (SETQ PIECE (\CHTOPC CH# PCTB))
-          [COND
-             [(NULL PIECE)                                   (* No piece to take looks from;
-                                                             use the default)
-              (SETQ LOOKS (OR (fetch (TEXTOBJ DEFAULTCHARLOOKS) of TEXTOBJ)
-                              (\TEDIT.UNIQUIFY.CHARLOOKS (CHARLOOKS.FROM.FONT DEFAULTFONT)
-                                     TEXTOBJ]
-             ((ATOM PIECE)                                   (* Trying to take from the 
-                                                             pseudo-piece at the end.)
-              (COND
-                 [(ZEROP (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ))
-                                                             (* No characters to steal from.
-                                                             Use the defaults)
-                  (SETQ LOOKS (OR (fetch (TEXTOBJ DEFAULTCHARLOOKS) of TEXTOBJ)
-                                  (\TEDIT.UNIQUIFY.CHARLOOKS (CHARLOOKS.FROM.FONT DEFAULTFONT)
-                                         TEXTOBJ]
-                 (T                                          (* Otherwise, steal the looks of the 
-                                                             last character)
-                    (SETQ PIECE (fetch (PCTNODE PCE) of (FINDNODE-INDEX
-                                                         PCTB
-                                                         (SUB1 (INDEX (fetch (PCTNODE CHNUM)
-                                                                         of (\LASTNODE PCTB))
-                                                                      PCTB]
-          [COND
-             (LOOKS)
-             ((fetch (CHARLOOKS CLPROTECTED) of (fetch (PIECE PLOOKS) of PIECE))
-                                                             (* His looks are protected;
-                                                             we have to copy to a new CHARLOOKS.)
-              (SETQ LOOKS (\TEDIT.UNIQUIFY.CHARLOOKS (create CHARLOOKS
-                                                        using (fetch (PIECE PLOOKS) of PIECE)
-                                                              CLPROTECTED _ NIL CLSELHERE _ NIL)
-                                 TEXTOBJ)))
-             (T                                              (* No protection, just reuse his looks)
-                (SETQ LOOKS (fetch (PIECE PLOOKS) of PIECE]
-          (RETURN (\TEDIT.UNIQUIFY.CHARLOOKS (\TEDIT.CARETLOOKS.VERIFY TEXTOBJ LOOKS)
-                         TEXTOBJ])
+    (LET ([CH# (IMAX 1 (IMIN (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ)
+                             (SELECTQ (fetch (SELECTION POINT) of SEL)
+                                 (LEFT (fetch (SELECTION CH#) of SEL))
+                                 (RIGHT (SUB1 (fetch (SELECTION CHLIM) of SEL)))
+                                 (SHOULDNT]
+          PC LOOKS)
+         (SETQ PC (\CHTOPC CH# TEXTOBJ))
+         (CL:UNLESS PC                                       (* ; 
+                                                      "No piece to take looks from;  use the default")
+             (SETQ LOOKS (OR (fetch (TEXTOBJ DEFAULTCHARLOOKS) of TEXTOBJ)
+                             (\TEDIT.UNIQUIFY.CHARLOOKS (CHARLOOKS.FROM.FONT DEFAULTFONT)
+                                    TEXTOBJ))))
+         (CL:UNLESS LOOKS
+             (SETQ LOOKS (if (fetch (CHARLOOKS CLPROTECTED) of (fetch (PIECE PLOOKS) of PC))
+                             then                            (* ; 
+                                      "His looks are protected;  we have to copy to a new CHARLOOKS.")
+                                  (\TEDIT.UNIQUIFY.CHARLOOKS (create CHARLOOKS
+                                                                using (fetch (PIECE PLOOKS)
+                                                                         of PC)
+                                                                      CLPROTECTED _ NIL CLSELHERE _ 
+                                                                      NIL)
+                                         TEXTOBJ)
+                           else                              (* ; 
+                                                             "No protection, just reuse his looks")
+                                (fetch (PIECE PLOOKS) of PC))))
+         (\TEDIT.UNIQUIFY.CHARLOOKS (\TEDIT.CARETLOOKS.VERIFY TEXTOBJ LOOKS)
+                TEXTOBJ])
 
 (\TEDIT.GET.TERMSA.WIDTHS
   [LAMBDA (TERMSA FONT)                                      (* jds "22-OCT-83 21:36")
@@ -565,153 +839,134 @@
           (RETURN NWIDTHS])
 
 (\TEDIT.LOOKS.UPDATE
-  [LAMBDA (STREAM PC)                                        (* ; "Edited 30-May-91 21:47 by jds")
+  [LAMBDA (TSTREAM PC)                                       (* ; "Edited 11-Sep-2022 21:26 by rmk")
+                                                             (* ; "Edited 30-May-91 21:47 by jds")
 
 (* ;;; "Called under \FORMATLINE, on which it depends.  At a piece boundary, update the line formatting fields such as ASCENT, DESCENT, etc.  Also, skip over invisible characters")
 
     (DECLARE (USEDFREE LOOKS CHLIST WLIST FONTWIDTHS CHNO ASCENT DESCENT LOOKNO LINE FONT 
                     INVISIBLERUNS NEWASCENT NEWDESCENT))
-    (COND
-       (PC (PROG ((TEXTOBJ (fetch (TEXTSTREAM TEXTOBJ) of STREAM))
-                  (ORIGPC PC)
-                  TLOOKS TEMP NEWPC PARALOOKS PREVPC)
-                 [COND
-                    ([OR (NOT (fetch (PIECE PREVPIECE) of ORIGPC))
-                         (NEQ (fetch (PIECE PPARALOOKS) of ORIGPC)
-                              (fetch (PIECE PPARALOOKS) of (fetch (PIECE PREVPIECE) of ORIGPC]
-                     (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS) of ORIGPC)
-                                            ORIGPC TEXTOBJ))
-                     (replace (TEXTSTREAM CURRENTPARALOOKS) of STREAM with PARALOOKS))
-                    (T (SETQ PARALOOKS (fetch (TEXTSTREAM CURRENTPARALOOKS) of STREAM]
-                 (SETQ TLOOKS (\TEDIT.APPLY.STYLES (ffetch (PIECE PLOOKS) of ORIGPC)
-                                     ORIGPC TEXTOBJ))
-                 (COND
-                    ((fetch (CHARLOOKS CLINVISIBLE) of TLOOKS)
+    (CL:WHEN PC
+        (LET ((TEXTOBJ (fetch (TEXTSTREAM TEXTOBJ) of TSTREAM))
+              (ORIGPC PC)
+              TLOOKS NEWPC PARALOOKS PREVPC)
+             (COND
+                ([AND (PREVPIECE ORIGPC)
+                      (EQ (fetch (PIECE PPARALOOKS) of ORIGPC)
+                          (fetch (PIECE PPARALOOKS) of (PREVPIECE ORIGPC]
+                 (SETQ PARALOOKS (fetch (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM)))
+                (T (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS) of ORIGPC)
+                                          ORIGPC TEXTOBJ))
+                   (replace (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM with PARALOOKS)))
+             (SETQ TLOOKS (\TEDIT.APPLY.STYLES (PLOOKS ORIGPC)
+                                 ORIGPC TEXTOBJ))
+             (CL:WHEN (fetch (CHARLOOKS CLINVISIBLE) of TLOOKS)
                                                              (* ; 
          "We've hit a run of invisible characters.  Skip them, and insert a marker in the line cache")
-                     (add LOOKNO 1)                          (* ; 
+                 (add LOOKNO 1)                              (* ; 
                                                              "Fix the counter of charlooks changes")
-                     (\EDITSETA LOOKS LOOKNO (fetch (PIECE PLEN) of ORIGPC))
-                     (\RPLPTR CHLIST 0 LMInvisibleRun)       (* ; 
+                 (\EDITSETA LOOKS LOOKNO (PLEN ORIGPC))
+                 (\RPLPTR CHLIST 0 LMInvisibleRun)           (* ; 
                                          "Note the existence of an invisible run of characters here.")
-                     (\RPLPTR WLIST 0 0)
-                     (add TLEN 1)
-                     (SETQ CHLIST (\ADDBASE CHLIST 2))
-                     (SETQ WLIST (\ADDBASE WLIST 2))
-                     (SETQ PREVPC ORIGPC)
-                     (SETQ ORIGPC (fetch (PIECE NEXTPIECE) of ORIGPC))
-                     (COND
-                        ((AND ORIGPC (NEQ (fetch (PIECE PPARALOOKS) of ORIGPC)
-                                          (fetch (PIECE PPARALOOKS) of PREVPC)))
-                         (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS)
-                                                                     of ORIGPC)
-                                                ORIGPC TEXTOBJ))
-                         (replace (TEXTSTREAM CURRENTPARALOOKS) of STREAM with PARALOOKS)))
-                     (SETQ TLOOKS (AND ORIGPC (\TEDIT.APPLY.STYLES (ffetch (PIECE PLOOKS)
-                                                                      of ORIGPC)
-                                                     ORIGPC TEXTOBJ)))
-                     [while (AND ORIGPC (OR (ZEROP (fetch (PIECE PLEN) of ORIGPC))
-                                            (fetch (CHARLOOKS CLINVISIBLE) of TLOOKS)))
-                        do                                   (* ; 
+                 (\RPLPTR WLIST 0 0)
+                 (add TLEN 1)
+                 (SETQ CHLIST (\ADDBASE CHLIST 2))
+                 (SETQ WLIST (\ADDBASE WLIST 2))
+                 (SETQ PREVPC ORIGPC)
+                 (SETQ ORIGPC (NEXTPIECE ORIGPC))
+                 (CL:WHEN (AND ORIGPC (NEQ (fetch (PIECE PPARALOOKS) of ORIGPC)
+                                           (fetch (PIECE PPARALOOKS) of PREVPC)))
+                     (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS) of ORIGPC)
+                                            ORIGPC TEXTOBJ))
+                     (replace (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM with PARALOOKS))
+                 (SETQ TLOOKS (AND ORIGPC (\TEDIT.APPLY.STYLES (PLOOKS ORIGPC)
+                                                 ORIGPC TEXTOBJ)))
+                 [while (AND ORIGPC (OR (ZEROP (PLEN ORIGPC))
+                                        (fetch (CHARLOOKS CLINVISIBLE) of TLOOKS)))
+                    do                                       (* ; 
                   "Skip over this run of invisible characters --and any trailing run of empty pieces")
-                           (\EDITSETA LOOKS LOOKNO (IPLUS (fetch (PIECE PLEN) of ORIGPC)
-                                                          (\EDITELT LOOKS LOOKNO))) 
+                       (\EDITSETA LOOKS LOOKNO (IPLUS (PLEN ORIGPC)
+                                                      (\EDITELT LOOKS LOOKNO))) 
                                                              (* ; 
                                                "Note the invisible run length for the line displayer")
-                           (SETQ PREVPC ORIGPC)
-                           (SETQ ORIGPC (fetch (PIECE NEXTPIECE) of ORIGPC))
-                           (COND
-                              ((NOT ORIGPC)                  (* ; 
-                          "We ran off the end of the document.  Don't try to update paragraph looks.")
-                               )
-                              ((NEQ (fetch (PIECE PPARALOOKS) of ORIGPC)
-                                    (fetch (PIECE PPARALOOKS) of PREVPC))
-                                                             (* ; 
-                                    "Paragraph looks changed in the course of the invisible section.")
-                               (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS)
-                                                                           of ORIGPC)
-                                                      ORIGPC TEXTOBJ))
-                               (replace (TEXTSTREAM CURRENTPARALOOKS) of STREAM with PARALOOKS)))
-                           (SETQ TLOOKS (AND ORIGPC (\TEDIT.APPLY.STYLES (ffetch (PIECE PLOOKS)
-                                                                            of ORIGPC)
-                                                           ORIGPC TEXTOBJ]
-                     (while (AND ORIGPC (ZEROP (fetch (PIECE PLEN) of ORIGPC)))
-                        do                                   (* ; 
+                       (SETQ PREVPC ORIGPC)
+                       (SETQ ORIGPC (NEXTPIECE ORIGPC))
+                       (CL:WHEN (AND ORIGPC (NEQ (fetch (PIECE PPARALOOKS) of ORIGPC)
+                                                 (fetch (PIECE PPARALOOKS) of PREVPC)))
+                           (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS)
+                                                                       of ORIGPC)
+                                                  ORIGPC TEXTOBJ))
+                           (replace (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM with PARALOOKS))
+                       (SETQ TLOOKS (AND ORIGPC (\TEDIT.APPLY.STYLES (PLOOKS ORIGPC)
+                                                       ORIGPC TEXTOBJ]
+                 (SETQ ORIGPC (\NEXT.VISIBLE.PIECE ORIGPC))  (* ; 
                                                    "Skip over any trailing pieces that are zero long")
-                           (SETQ PREVPC ORIGPC)
-                           (SETQ ORIGPC (fetch (PIECE NEXTPIECE) of ORIGPC)))
-                     (add CHNO (\EDITELT LOOKS LOOKNO))
-                     (add INVISIBLERUNS (\EDITELT LOOKS LOOKNO))
-                                                             (* ; 
+                 (add CHNO (\EDITELT LOOKS LOOKNO))
+                 (add INVISIBLERUNS (\EDITELT LOOKS LOOKNO)) (* ; 
                                                 "Keep track of how much invisible text we cross over")
-                     (SETQ NEWPC ORIGPC)))
-                 (COND
-                    ([AND ORIGPC (NOT (EQCLOOKS TLOOKS (fetch (TEXTSTREAM CURRENTLOOKS) of STREAM]
+                 (SETQ NEWPC ORIGPC))
+             (COND
+                ([AND ORIGPC (NOT (EQCLOOKS TLOOKS (fetch (TEXTSTREAM CURRENTLOOKS) of TSTREAM]
 
-                     (* ;; "Only update looks if there's really a new piece to update them from, and the looks have really changed")
+                 (* ;; "Only update looks if there's really a new piece to update them from, and the looks have really changed")
 
-                     (replace (TEXTSTREAM CURRENTLOOKS) of STREAM with TLOOKS)
-                     (replace (TEXTSTREAM CURRENTPARALOOKS) of STREAM with PARALOOKS)
-                     [COND
-                        [(type? FONTCLASS (fetch (CHARLOOKS CLFONT) of TLOOKS))
+                 (replace (TEXTSTREAM CURRENTLOOKS) of TSTREAM with TLOOKS)
+                 (replace (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM with PARALOOKS)
+                 [COND
+                    [(type? FONTCLASS (fetch (CHARLOOKS CLFONT) of TLOOKS))
                                                              (* ; 
                                                       "For FONTCLASSes, we have to get the real font")
-                         (SETQ FONT (FONTCOPY (fetch (CHARLOOKS CLFONT) of TLOOKS)
-                                           'DEVICE
-                                           'DISPLAY]
-                        (T                                   (* ; 
+                     (SETQ FONT (FONTCOPY (fetch (CHARLOOKS CLFONT) of TLOOKS)
+                                       'DEVICE
+                                       'DISPLAY]
+                    (T                                       (* ; 
                                                           "It's a font already, so no work is needed")
-                           (SETQ FONT (fetch (CHARLOOKS CLFONT) of TLOOKS]
-                     [SETQ NEWASCENT (IMAX ASCENT (IPLUS (FONTPROP FONT 'ASCENT)
-                                                         (OR (ffetch (CHARLOOKS CLOFFSET)
-                                                                of TLOOKS)
-                                                             0]
-                     [SETQ NEWDESCENT (IMAX DESCENT (IDIFFERENCE (FONTPROP FONT 'DESCENT)
-                                                           (OR (ffetch (CHARLOOKS CLOFFSET)
-                                                                  of TLOOKS)
-                                                               0]
-                     [COND
-                        ((fetch (FMTSPEC FMTHARDCOPY) of PARALOOKS)
+                       (SETQ FONT (fetch (CHARLOOKS CLFONT) of TLOOKS]
+                 [SETQ NEWASCENT (IMAX ASCENT (IPLUS (FONTPROP FONT 'ASCENT)
+                                                     (OR (ffetch (CHARLOOKS CLOFFSET) of TLOOKS)
+                                                         0]
+                 [SETQ NEWDESCENT (IMAX DESCENT (IDIFFERENCE (FONTPROP FONT 'DESCENT)
+                                                       (OR (ffetch (CHARLOOKS CLOFFSET) of TLOOKS)
+                                                           0]
+                 (CL:WHEN (fetch (FMTSPEC FMTHARDCOPY) of PARALOOKS)
                                                              (* ; 
                                           "If it's a hardcopy-format line, grab the hardcopy widths.")
-                         (SETQ FONT (FONTCOPY (fetch (CHARLOOKS CLFONT) of TLOOKS)
-                                           'DEVICE DEVICE]
-                     (add LOOKNO 1)                          (* ; 
+                     (SETQ FONT (FONTCOPY (fetch (CHARLOOKS CLFONT) of TLOOKS)
+                                       'DEVICE DEVICE)))
+                 (add LOOKNO 1)                              (* ; 
                                                              "Fix the counter of charlooks changes")
-                     (\EDITSETA LOOKS LOOKNO TLOOKS)         (* ; 
+                 (\EDITSETA LOOKS LOOKNO TLOOKS)             (* ; 
                                                            "Save the new looks for selection/display")
-                     (\RPLPTR CHLIST 0 LMLooksChange)        (* ; 
+                 (\RPLPTR CHLIST 0 LMLooksChange)            (* ; 
                                         "Put a marker in the character list to denote a looks change")
-                     (\RPLPTR WLIST 0 0)                     (* ; "Font changes have no width")
-                     (add TLEN 1)
-                     (SETQ CHLIST (\ADDBASE CHLIST 2))
-                     (SETQ WLIST (\ADDBASE WLIST 2))         (* ; 
+                 (\RPLPTR WLIST 0 0)                         (* ; "Font changes have no width")
+                 (add TLEN 1)
+                 (SETQ CHLIST (\ADDBASE CHLIST 2))
+                 (SETQ WLIST (\ADDBASE WLIST 2))             (* ; 
                                                          "Account for the dummy marker/looks in TLEN")
-                     (COND
-                        ((ffetch (CHARLOOKS CLPROTECTED) of TLOOKS)
+                 (CL:WHEN (ffetch (CHARLOOKS CLPROTECTED) of TLOOKS)
                                                              (* ; 
                           "If this line contains protected text, mark the linedescriptor accordingly")
-                         (freplace (LINEDESCRIPTOR LHASPROT) of LINE with T)))
-                     (SETQ NEWPC ORIGPC))
-                    [(AND ORIGPC (fetch (PIECE PREVPIECE) of ORIGPC)
-                          (fetch (PIECE POBJ) of (fetch (PIECE PREVPIECE) of ORIGPC)))
+                     (freplace (LINEDESCRIPTOR LHASPROT) of LINE with T))
+                 (SETQ NEWPC ORIGPC))
+                [(AND ORIGPC (PREVPIECE ORIGPC)
+                      (EQ OBJECT.PTYPE (PTYPE ORIGPC)))
 
-                     (* ;; "After passing over an image object, always update the ascent and descent.  This avoids losing that info if an image object is first on the line;  we used to forget the starting font's data, which left following characters at the mercy of the imageobj.")
+                 (* ;; "After passing over an image object, always update the ascent and descent.  This avoids losing that info if an image object is first on the line;  we used to forget the starting font's data, which left following characters at the mercy of the imageobj.")
 
-                     [SETQ NEWASCENT (IMAX ASCENT (IPLUS (FONTPROP FONT 'ASCENT)
-                                                         (OR (ffetch (CHARLOOKS CLOFFSET)
-                                                                of TLOOKS)
-                                                             0]
-                     (SETQ NEWDESCENT (IMAX DESCENT (IDIFFERENCE (FONTPROP FONT 'DESCENT)
-                                                           (OR (ffetch (CHARLOOKS CLOFFSET)
-                                                                  of TLOOKS)
-                                                               0]
-                    ((NOT ORIGPC)
+                 [SETQ NEWASCENT (IMAX ASCENT (IPLUS (FONTPROP FONT 'ASCENT)
+                                                     (OR (ffetch (CHARLOOKS CLOFFSET) of TLOOKS)
+                                                         0]
+                 (SETQ NEWDESCENT (IMAX DESCENT (IDIFFERENCE (FONTPROP FONT 'DESCENT)
+                                                       (OR (ffetch (CHARLOOKS CLOFFSET) of TLOOKS)
+                                                           0]
+                ((NOT ORIGPC)
 
-                     (* ;; "No more pieces in this document (we ran off the end skipping invisible text!) Return a NIL from the BIN, so that \FORMATLINE will not die.")
+                 (* ;; "No more pieces in this document (we ran off the end skipping invisible text!) .  Tells \FORMATLINE to stop.")
 
-                     (RETFROM '\BIN NIL)))
-                 (RETURN NEWPC])
+                 (RETFROM (FUNCTION \TEXTBIN)
+                        NIL)))
+             NEWPC))])
 
 (\TEDIT.PARSE.CHARLOOKS.LIST
   [LAMBDA (NLOOKS OLOOKS TEXTOBJ)                            (* ; "Edited 30-May-91 21:46 by jds")
@@ -875,7 +1130,8 @@
 (DEFINEQ
 
 (TEDIT.SUBLOOKS
-  [LAMBDA (TEXTSTREAM OLDLOOKSLIST NEWLOOKSLIST)             (* ; "Edited 26-Apr-93 14:53 by jds")
+  [LAMBDA (TEXTSTREAM OLDLOOKSLIST NEWLOOKSLIST)             (* ; "Edited 22-Aug-2022 13:06 by rmk")
+                                                             (* ; "Edited 26-Apr-93 14:53 by jds")
 
 (* ;;; "User entry to substitute one set of looks for another.  Goes through the whole textstream and whenever the looks match the characteristics of OLDLOOKSLIST which are specified, the characteristics listed in NEWLOOKSLIST are substituted.")
 
@@ -883,8 +1139,7 @@
            (NEWLOOKS (\TEDIT.PARSE.CHARLOOKS.LIST NEWLOOKSLIST))
            (TEXTOBJ (TEXTOBJ TEXTSTREAM))
            (SEL (fetch (TEXTOBJ SEL) of TEXTOBJ))
-           (PCTB (fetch (TEXTOBJ PCTB) of TEXTOBJ))
-           (FIRSTPC (\CHTOPC 1 PCTB))
+           (FIRSTPC (\CHTOPC 1 TEXTOBJ))
            (FEATURELIST (for A on OLDLOOKSLIST by (CDDR A) collect (CAR A)))
            CHANGEMADE)
           (\SHOWSEL SEL NIL NIL)                             (* ; "Turn off the selection, first.")
@@ -914,292 +1169,221 @@
 (DEFINEQ
 
 (\TEDIT.CHANGE.LOOKS
-  [LAMBDA (STREAM NEWLOOKS CH# LEN)                          (* ; "Edited 19-Apr-93 14:08 by jds")
+  [LAMBDA (TSTREAM NEWLOOKS CH# LEN)                         (* ; "Edited  6-Sep-2022 19:18 by rmk")
+                                                             (* ; "Edited  5-Sep-2022 15:06 by rmk")
+                                                             (* ; "Edited 19-Apr-93 14:08 by jds")
 
 (* ;;; "Internal programmatic interface to changing character looks.  DOES NOT CHANGE the current selection.")
+
+(* ;;; "WOULD BE BETTER TO GET A SEL OR CHLIM INSTEAD OF LENG")
 
 (* ;;; 
 "THIS FUNCTION AND \TEDIT.PARSE.CHARLOOKS.LIST MUST TRACK ONE ANOTHER, FOR THE P-LIST FORMAT..")
 
-    (PROG ((TEXTOBJ (TEXTOBJ STREAM))
-           PCTB PC1 PCNO1 PCNON PCN \INPC FAMILY FONT FACE SIZE PROT SELHERE ULINE OLINE STRIKE 
-           INVERSEVIDEO (SUPER NIL)
-           (WEIGHT NIL)
-           (SLOPE NIL)
-           (SIZEINC NIL)
-           (OFFSETINC NIL)
-           (EXPANSION NIL)
-           (NEWLOOKS NEWLOOKS)
-           (NLOOKSAVE NEWLOOKS)
-           (SUB NIL)
-           (INVISIBLE NIL)
-           FOOLOOKS NEWFONT DY CHLIM (OLDLOOKSLIST NIL)
-           STYLE STYLESET UISET USERINFO START-OF-PIECE)
-          (SETQ PCTB (fetch (TEXTOBJ PCTB) of TEXTOBJ))
-          (SETQ \INPC (fetch (TEXTOBJ \INSERTPC) of TEXTOBJ))(* ; 
+    (PROG ((TEXTOBJ (TEXTOBJ TSTREAM))
+           CARETPC FAMILY FONT FACE SIZE PROTECTED SELECTPOINT UNDERLINE OVERLINE STRIKEOUT INVERTED
+           SUPERSCRIPT WEIGHT SLOPE SIZEINCREMENT OFFSETINCREMENT EXPANSION NLOOKSAVE SUBSCRIPT 
+           INVISIBLE FOOLOOKS NEWFONT OLDLOOKSLIST STYLE STYLESET UISET USERINFO START-OF-PIECE)
+          (BTVALIDATE '\TEDIT.CHANGE.LOOOKS 'START TEXTOBJ)
+          (CL:WHEN (OR (IGREATERP CH# (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ))
+                       (ZEROP LEN))
+
+              (* ;; 
+              "There won't be any text changed by this.  Just punt out after setting the caret looks")
+
+              (TEDIT.CARETLOOKS TSTREAM NEWLOOKS)
+              (RETURN))                                      (* ; 
                                                            "Construct the set of new looks to apply:")
-          (COND
-             ((OR (IGREATERP CH# (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ))
-                  (ZEROP LEN))                               (* ; 
-                                           "There won't be any text changed by this.  Just punt out.")
-              (TEDIT.CARETLOOKS STREAM NEWLOOKS)             (* ; "After setting the caret looks.")
-              (RETURN)))
-          [COND
-             ((type? CHARLOOKS NEWLOOKS)                     (* ; 
+          (CL:UNLESS (type? CHARLOOKS NEWLOOKS)              (* ; 
                                       "We've already got a made-up set of looks;  we'll just use it.")
-              )
-             ((FONTP NEWLOOKS)                               (* ; 
+              [COND
+                 ((FONTP NEWLOOKS)                           (* ; 
                                          "If it's a font descriptor, extract what we need from that.")
-              (SETQ FONT NEWLOOKS)
-              (SETQ NEWLOOKS NIL))
-             (T                                              (* ; 
-                                              "We got an AList -- prepare looks changes in that form")
-                (SETQ FONT (LISTGET NEWLOOKS 'FONT))
-                (SETQ FAMILY (LISTGET NEWLOOKS 'FAMILY))
-                (SETQ FACE (LISTGET NEWLOOKS 'FACE))
-                (SETQ SIZE (LISTGET NEWLOOKS 'SIZE))
-                (SETQ PROT (LISTGET NEWLOOKS 'PROTECTED))
-                (SETQ SELHERE (LISTGET NEWLOOKS 'SELECTPOINT))
-                (SETQ ULINE (LISTGET NEWLOOKS 'UNDERLINE))
-                (SETQ OLINE (LISTGET NEWLOOKS 'OVERLINE))
-                (SETQ INVERSEVIDEO (LISTGET NEWLOOKS 'INVERTED))
-                (SETQ STRIKE (LISTGET NEWLOOKS 'STRIKEOUT))
-                (SETQ INVISIBLE (LISTGET NEWLOOKS 'INVISIBLE))
-                (SETQ SUPER (LISTGET NEWLOOKS 'SUPERSCRIPT))
-                (SETQ SUB (LISTGET NEWLOOKS 'SUBSCRIPT))
-                (SETQ WEIGHT (LISTGET NEWLOOKS 'WEIGHT))
-                (SETQ SLOPE (LISTGET NEWLOOKS 'SLOPE))
-                (SETQ EXPANSION (LISTGET NEWLOOKS 'EXPANSION))
-                (SETQ SIZEINC (LISTGET NEWLOOKS 'SIZEINCREMENT))
-                (SETQ OFFSETINC (LISTGET NEWLOOKS 'OFFSETINCREMENT))
-                (SETQ STYLE (LISTGET NEWLOOKS 'STYLE))
-                (SETQ STYLESET (FMEMB 'STYLE NEWLOOKS))
-                (SETQ USERINFO (LISTGET NEWLOOKS 'USERINFO))
-                (SETQ UISET (FMEMB 'USERINFO NEWLOOKS))
-                (SETQ NEWLOOKS NIL)                          (* ; "Tell later code to use FOOLOOKS")
-                (SETQ FOOLOOKS NIL)
-                [COND
-                   (FAMILY (SETQ FOOLOOKS (CONS 'FAMILY (CONS FAMILY FOOLOOKS]
-                [COND
-                   (FONT (COND
-                            ((type? FONTCLASS FONT)          (* ; 
-                                                           "Needn't do anything.  It's a font class.")
-                             )
-                            ([SETQ FONT (CAR (NLSETQ (\DTEST FONT 'FONTDESCRIPTOR]
-                                                             (* ; 
-                                      "Try converting it to a font--it might be a list or some such.")
-                             )
-                            (T                               (* ; 
-                                      "Nothing doing--it isn't any of the reasonable forms, so punt.")
-                               (TEDIT.PROMPTPRINT (CONCAT FONT " isn't a valid font descriptor.")
-                                      T)
-                               (RETURN]
-                [COND
-                   [(OR WEIGHT SLOPE EXPANSION)              (* ; 
+                  (SETQ FONT NEWLOOKS)
+                  (SETQ NEWLOOKS NIL))
+                 (T                                          (* ; 
+                                              "We got an PList -- prepare looks changes in that form")
+                                                             (* (for L on NEWLOOKS by CDDR do
+                                                             (SET (CAR L) (CADR L))))
+                    (SETQ FONT (LISTGET NEWLOOKS 'FONT))
+                    (SETQ FAMILY (LISTGET NEWLOOKS 'FAMILY))
+                    (SETQ FACE (LISTGET NEWLOOKS 'FACE))
+                    (SETQ SIZE (LISTGET NEWLOOKS 'SIZE))
+                    (SETQ PROTECTED (LISTGET NEWLOOKS 'PROTECTED))
+                    (SETQ SELECTPOINT (LISTGET NEWLOOKS 'SELECTPOINT))
+                    (SETQ UNDERLINE (LISTGET NEWLOOKS 'UNDERLINE))
+                    (SETQ OVERLINE (LISTGET NEWLOOKS 'OVERLINE))
+                    (SETQ INVERTED (LISTGET NEWLOOKS 'INVERTED))
+                    (SETQ STRIKEOUT (LISTGET NEWLOOKS 'STRIKEOUT))
+                    (SETQ INVISIBLE (LISTGET NEWLOOKS 'INVISIBLE))
+                    (SETQ SUPERSCRIPT (LISTGET NEWLOOKS 'SUPERSCRIPT))
+                    (SETQ SUBSCRIPT (LISTGET NEWLOOKS 'SUBSCRIPT))
+                    (SETQ WEIGHT (LISTGET NEWLOOKS 'WEIGHT))
+                    (SETQ SLOPE (LISTGET NEWLOOKS 'SLOPE))
+                    (SETQ EXPANSION (LISTGET NEWLOOKS 'EXPANSION))
+                    (SETQ SIZEINCREMENT (LISTGET NEWLOOKS 'SIZEINCREMENT))
+                    (SETQ OFFSETINCREMENT (LISTGET NEWLOOKS 'OFFSETINCREMENT))
+                    (SETQ STYLE (LISTGET NEWLOOKS 'STYLE))
+                    (SETQ STYLESET (FMEMB 'STYLE NEWLOOKS))
+                    (SETQ USERINFO (LISTGET NEWLOOKS 'USERINFO))
+                    (SETQ UISET (FMEMB 'USERINFO NEWLOOKS))
+                    (SETQ NEWLOOKS NIL)                      (* ; "Tell later code to use FOOLOOKS")
+                    (SETQ FOOLOOKS NIL)
+                    (CL:WHEN FAMILY
+                        (SETQ FOOLOOKS (CONS 'FAMILY (CONS FAMILY FOOLOOKS))))
+                    (CL:WHEN FONT
+                        (CL:UNLESS [OR (type? FONTCLASS FONT)
+                                       (SETQ FONT (CAR (NLSETQ (\DTEST FONT 'FONTDESCRIPTOR]
+
+                            (* ;; "Try converting it to a font--it might be a list or some such.")
+
+                            (* ;; "Nothing doing--it isn't any of the reasonable forms, so punt.")
+
+                            (TEDIT.PROMPTPRINT (CONCAT FONT " isn't a valid font descriptor.")
+                                   T)
+                            (RETURN)))
+                    [COND
+                       [(OR WEIGHT SLOPE EXPANSION)          (* ; 
                                                    "Setting one of these inhibits the FACE parameter")
-                    [AND WEIGHT (SETQ FOOLOOKS (CONS 'WEIGHT (CONS WEIGHT FOOLOOKS]
-                    [AND SLOPE (SETQ FOOLOOKS (CONS 'SLOPE (CONS SLOPE FOOLOOKS]
-                    (AND EXPANSION (SETQ FOOLOOKS (CONS 'EXPANSION (CONS EXPANSION FOOLOOKS]
-                   (FACE (SETQ FOOLOOKS (CONS 'FACE (CONS FACE FOOLOOKS]
-                (COND
-                   [SIZE (SETQ FOOLOOKS (CONS 'SIZE (CONS SIZE FOOLOOKS]
-                   (SIZEINC (SETQ FOOLOOKS (CONS 'SIZE (CONS 'BOGUSSIZE FOOLOOKS]
+                        [AND WEIGHT (SETQ FOOLOOKS (CONS 'WEIGHT (CONS WEIGHT FOOLOOKS]
+                        [AND SLOPE (SETQ FOOLOOKS (CONS 'SLOPE (CONS SLOPE FOOLOOKS]
+                        (AND EXPANSION (SETQ FOOLOOKS (CONS 'EXPANSION (CONS EXPANSION FOOLOOKS]
+                       (FACE (SETQ FOOLOOKS (CONS 'FACE (CONS FACE FOOLOOKS]
+                    (COND
+                       [SIZE (SETQ FOOLOOKS (CONS 'SIZE (CONS SIZE FOOLOOKS]
+                       (SIZEINCREMENT (SETQ FOOLOOKS (CONS 'SIZE (CONS 'BOGUSSIZE FOOLOOKS])
+          (CL:WHEN NEWLOOKS
+
+              (* ;; "For the case of a completely specified looks, do the following outside the loop: Make sure that this isn't a duplicate set of looks for this document.")
+
+              (SETQ NEWLOOKS (\TEDIT.UNIQUIFY.CHARLOOKS NEWLOOKS TEXTOBJ)))
           (replace (TEXTOBJ \DIRTY) of TEXTOBJ with T)       (* ; "Mark the document changed.")
-          (SETQ CHLIM (IMIN (ADD1 (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ))
-                            (IPLUS CH# LEN)))                (* ; "last ch to change")
-          (SETQ PC1 (\CHTOPC CH# PCTB T))                    (* ; "Piece the first ch is in")
-          (COND
-             ((IGREATERP CH# START-OF-PIECE)                 (* ; 
-                                                         "If CH# is not first ch in piece, split it.")
-              (SETQ PC1 (\SPLITPIECE PC1 (- CH# START-OF-PIECE)
-                               TEXTOBJ PCNO1))               (* ; 
-                                                 "Take 2nd half of the split, which starts with CH#.")
-              (SETQ PCTB (fetch (TEXTOBJ PCTB) of TEXTOBJ))  (* ; 
-                                              "NB: \SplitPiece may make a new PCTB, so copy it here.")
-              ))
-          (SETQ PCN (\CHTOPC CHLIM PCTB T))
-          (COND
-             ((IEQP CHLIM START-OF-PIECE)                    (* ; 
-                                    "CHLIM+1 is the start of a new piece.  just use prevpiece as pcn")
-              (SETQ PCN (\CHTOPC (SUB1 CHLIM)
-                               PCTB T)))
-             (T                                              (* ; 
-          "If the last char isn't the last char in the piece, then split it and take the first half.")
-                (\SPLITPIECE PCN (- CHLIM START-OF-PIECE)
-                       TEXTOBJ PCNON)))
-          [COND
-             (NEWLOOKS 
 
-                    (* ;; "For the case of a completely specified looks, do the following outside the loop: Make sure that this isn't a duplicate set of looks for this document.")
+     (* ;; "If one of the PC's we are changing is HINTPC, then we presumably are crossing the caret and the caret looks should be changed too.")
 
-                    (SETQ NEWLOOKS (\TEDIT.UNIQUIFY.CHARLOOKS NEWLOOKS TEXTOBJ]
-          [bind (PC _ PC1)
-                NEWPCLOOKS while (AND PC (NEQ PC PCN))
-             do
-             (SETQ OLDLOOKSLIST (NCONC1 OLDLOOKSLIST (fetch (PIECE PLOOKS) of PC))) 
+     (* ;; 
+     "RMK:  MAYBE WE SHOULD MORE DIRECTLY FIND THE CARET PIECE; THE HINTPC IS ONLY A SEARCH HINT.")
+
+          (SETQ CARETPC (fetch (TEXTOBJ HINTPC) of TEXTOBJ))
+          (RETURN
+           (for PC NEWPCLOOKS inpiecerange (\PIECERANGE CH# (IPLUS CH# LEN)
+                                                  TEXTOBJ)
+              do (SETQ OLDLOOKSLIST (NCONC1 OLDLOOKSLIST (fetch (PIECE PLOOKS) of PC))) 
                                                              (* ; "Save old looks for the Undo.")
-             (COND
-                (NEWLOOKS                                    (* ; 
+                 [COND
+                    (NEWLOOKS                                (* ; 
                                                              "We got a CHARLOOKS in.  Just use it")
-                       (replace (PIECE PLOOKS) of PC with NEWLOOKS))
-                (T                                           (* ; 
+                           (replace (PIECE PLOOKS) of PC with NEWLOOKS))
+                    (T                                       (* ; 
                                                          "Otherwise, we have to override selectively")
-                   [replace (PIECE PLOOKS) of PC with (SETQ NEWPCLOOKS (create CHARLOOKS
-                                                                          using (fetch (PIECE PLOOKS)
-                                                                                   of PC]
+                       (SETQ NEWPCLOOKS (create CHARLOOKS using (fetch (PIECE PLOOKS) of PC)))
+                       (replace (PIECE PLOOKS) of PC with NEWPCLOOKS)
 
-                   (* ;; "If a size increment is specified, then add to the newspecs arg for fontcopy, the entry with the incremented size from the current font.")
+                       (* ;; "If a size increment is specified, then add to the newspecs arg for fontcopy, the entry with the incremented size from the current font.")
 
-                   [replace (CHARLOOKS CLFONT) of NEWPCLOOKS
-                      with (SETQ NEWFONT
-                            (OR FONT (\TEDIT.FONTCOPY
-                                      (fetch (CHARLOOKS CLFONT) of (fetch (PIECE PLOOKS) of PC))
-                                      (COND
-                                         (SIZEINC            (* ; 
+                       (SETQ NEWFONT
+                        (OR FONT (\TEDIT.FONTCOPY
+                                  (fetch (CHARLOOKS CLFONT) of (fetch (PIECE PLOOKS) of PC))
+                                  (COND
+                                     (SIZEINCREMENT          (* ; 
                                      "There's a size change requested.  Fix up the size of the font.")
-                                                (LISTPUT FOOLOOKS 'SIZE
-                                                       (IPLUS (FONTPROP (fetch (CHARLOOKS CLFONT)
-                                                                           of (fetch (PIECE PLOOKS)
-                                                                                 of PC))
-                                                                     'SIZE)
-                                                              SIZEINC))
-                                                FOOLOOKS)
-                                         (T FOOLOOKS))
-                                      TEXTOBJ]               (* ; "Give this piece its new looks")
-                   [replace (CHARLOOKS CLBOLD) of NEWPCLOOKS with (EQ 'BOLD (FONTPROP NEWFONT
-                                                                                   'WEIGHT]
-                   [replace (CHARLOOKS CLITAL) of NEWPCLOOKS with (EQ 'ITALIC (FONTPROP NEWFONT
-                                                                                     'SLOPE]
-                   [AND PROT (replace (CHARLOOKS CLPROTECTED) of NEWPCLOOKS
-                                with (EQ PROT 'ON]
-                   [AND SELHERE (replace (CHARLOOKS CLSELHERE) of NEWPCLOOKS
-                                   with (EQ SELHERE 'ON]
-                   [AND ULINE (replace (CHARLOOKS CLULINE) of NEWPCLOOKS with (EQ ULINE 'ON]
-                   [AND OLINE (replace (CHARLOOKS CLOLINE) of NEWPCLOOKS with (EQ OLINE 'ON]
-                   [AND STRIKE (replace (CHARLOOKS CLSTRIKE) of NEWPCLOOKS with (EQ STRIKE
-                                                                                    'ON]
-                   [AND INVISIBLE (replace (CHARLOOKS CLINVISIBLE) of NEWPCLOOKS
-                                     with (EQ INVISIBLE 'ON]
-                   (AND SUPER (replace (CHARLOOKS CLOFFSET) of NEWPCLOOKS with SUPER))
-                   (AND SUB (replace (CHARLOOKS CLOFFSET) of NEWPCLOOKS with (IMINUS SUB)))
-                   (AND STYLESET (replace (CHARLOOKS CLSTYLE) of NEWPCLOOKS with STYLE))
-                   (AND UISET (replace (CHARLOOKS CLUSERINFO) of NEWPCLOOKS with USERINFO))
-                   (AND OFFSETINC (replace (CHARLOOKS CLOFFSET) of NEWPCLOOKS
-                                     with (IPLUS (OR (fetch (CHARLOOKS CLOFFSET) of NEWPCLOOKS)
-                                                     0)
-                                                 OFFSETINC)))
-                   [AND INVERSEVIDEO (replace (CHARLOOKS CLINVERTED) of NEWPCLOOKS
-                                        with (EQ INVERSEVIDEO 'ON]
-                   (replace (CHARLOOKS CLSIZE) of NEWPCLOOKS with (FONTPROP NEWFONT 'SIZE))
-                   (replace (PIECE PLOOKS) of PC with (\TEDIT.UNIQUIFY.CHARLOOKS NEWPCLOOKS TEXTOBJ))
-                                                             (* ; 
-                                      "Assure that each set of looks appears only once in the world.")
-                   ))
-             [COND
-                ((EQ PC \INPC)
-                 (replace (TEXTOBJ CARETLOOKS) of TEXTOBJ with (\TEDIT.CARETLOOKS.VERIFY
-                                                                TEXTOBJ
-                                                                (fetch (PIECE PLOOKS) of PC]
-             (SETQ PC (fetch (PIECE NEXTPIECE) of PC))
-             finally
-             (OR PC (RETURN))
-             (SETQ OLDLOOKSLIST (NCONC1 OLDLOOKSLIST (fetch (PIECE PLOOKS) of PC)))
-             (COND
-                (NEWLOOKS                                    (* ; 
-                                                             "We got a CHARLOOKS in.  Just use it")
-                       (replace (PIECE PLOOKS) of PC with NEWLOOKS))
-                (T                                           (* ; 
-                                                         "Otherwise, we have to override selectively")
-                 [replace (PIECE PLOOKS) of PC with (SETQ NEWPCLOOKS (create CHARLOOKS
-                                                                        using (fetch (PIECE PLOOKS)
-                                                                                 of PC]
-
-                 (* ;; "If a size increment is specified, then add to the newspecs arg for fontcopy, the entry with the incremented size from the current font.")
-
-                 [replace (CHARLOOKS CLFONT) of NEWPCLOOKS
-                    with
-                    (SETQ NEWFONT
-                     (OR FONT (\TEDIT.FONTCOPY
-                               (fetch (CHARLOOKS CLFONT) of (fetch (PIECE PLOOKS) of PC))
-                               (COND
-                                  (SIZEINC (PROGN (LISTPUT FOOLOOKS 'SIZE
-                                                         (IPLUS (FONTPROP (fetch (CHARLOOKS CLFONT)
-                                                                             of (fetch (PIECE PLOOKS)
-                                                                                   of PC))
-                                                                       'SIZE)
-                                                                SIZEINC))
-                                                  FOOLOOKS))
-                                  (T FOOLOOKS))
-                               TEXTOBJ]                      (* ; "Give this piece its new looks")
-                 [replace (CHARLOOKS CLBOLD) of NEWPCLOOKS with (EQ 'BOLD (FONTPROP NEWFONT
+                                            (LISTPUT FOOLOOKS 'SIZE
+                                                   (IPLUS (FONTPROP (fetch (CHARLOOKS CLFONT)
+                                                                       of (fetch (PIECE PLOOKS)
+                                                                             of PC))
+                                                                 'SIZE)
+                                                          SIZEINCREMENT))
+                                            FOOLOOKS)
+                                     (T FOOLOOKS))
+                                  TEXTOBJ)))
+                       (replace (CHARLOOKS CLFONT) of NEWPCLOOKS with NEWFONT)
+                                                             (* ; "Give this piece its new looks")
+                       [replace (CHARLOOKS CLBOLD) of NEWPCLOOKS with (EQ 'BOLD (FONTPROP
+                                                                                 NEWFONT
                                                                                  'WEIGHT]
-                 [replace (CHARLOOKS CLITAL) of NEWPCLOOKS with (EQ 'ITALIC (FONTPROP NEWFONT
+                       [replace (CHARLOOKS CLITAL) of NEWPCLOOKS with (EQ 'ITALIC (FONTPROP
+                                                                                   NEWFONT
                                                                                    'SLOPE]
-                 [AND PROT (replace (CHARLOOKS CLPROTECTED) of NEWPCLOOKS with (EQ PROT 'ON]
-                 [AND SELHERE (replace (CHARLOOKS CLSELHERE) of NEWPCLOOKS with (EQ SELHERE
-                                                                                    'ON]
-                 [AND ULINE (replace (CHARLOOKS CLULINE) of NEWPCLOOKS with (EQ ULINE 'ON]
-                 [AND OLINE (replace (CHARLOOKS CLOLINE) of NEWPCLOOKS with (EQ OLINE 'ON]
-                 [AND STRIKE (replace (CHARLOOKS CLSTRIKE) of NEWPCLOOKS with (EQ STRIKE 'ON]
-                 (AND SUPER (replace (CHARLOOKS CLOFFSET) of NEWPCLOOKS with SUPER))
-                 (AND SUB (replace (CHARLOOKS CLOFFSET) of NEWPCLOOKS with (IMINUS SUB)))
-                 [AND INVISIBLE (replace (CHARLOOKS CLINVISIBLE) of NEWPCLOOKS
-                                   with (EQ INVISIBLE 'ON]
-                 [AND INVERSEVIDEO (replace (CHARLOOKS CLINVERTED) of NEWPCLOOKS
-                                      with (EQ INVERSEVIDEO 'ON]
-                 [AND OFFSETINC (replace (CHARLOOKS CLOFFSET) of NEWPCLOOKS
-                                   with (IPLUS OFFSETINC (OR (fetch (CHARLOOKS CLOFFSET) of 
-                                                                                           NEWPCLOOKS
-                                                                    )
-                                                             0]
-                 (AND STYLESET (replace (CHARLOOKS CLSTYLE) of NEWPCLOOKS with STYLE))
-                 (AND UISET (replace (CHARLOOKS CLUSERINFO) of NEWPCLOOKS with USERINFO))
-                 (replace (CHARLOOKS CLSIZE) of NEWPCLOOKS with (FONTPROP NEWFONT 'SIZE))
-                 (replace (PIECE PLOOKS) of PC with (\TEDIT.UNIQUIFY.CHARLOOKS NEWPCLOOKS TEXTOBJ]
-          (\TEDIT.MARK.LINES.DIRTY TEXTOBJ CH# CHLIM)
-          (COND
-             ((fetch (TEXTOBJ \WINDOW) of TEXTOBJ)
-              (\SHOWSEL (fetch (TEXTOBJ SEL) of TEXTOBJ)
-                     NIL NIL)
-              (TEDIT.RESET.EXTEND.PENDING.DELETE (fetch (TEXTOBJ SEL) of TEXTOBJ))
-              (TEDIT.UPDATE.SCREEN TEXTOBJ)                  (* ; "Update the screen image")
-              (\FIXSEL (fetch (TEXTOBJ SEL) of TEXTOBJ)
-                     TEXTOBJ)
-              (\SHOWSEL (fetch (TEXTOBJ SEL) of TEXTOBJ)
-                     NIL T)))
-          (replace (TEXTOBJ \INSERTPCVALID) of TEXTOBJ with NIL)
-          (RETURN (LIST OLDLOOKSLIST NLOOKSAVE PC1])
+                       [AND PROTECTED (replace (CHARLOOKS CLPROTECTED) of NEWPCLOOKS
+                                         with (EQ PROTECTED 'ON]
+                       [AND SELECTPOINT (replace (CHARLOOKS CLSELHERE) of NEWPCLOOKS
+                                           with (EQ SELECTPOINT 'ON]
+                       [AND UNDERLINE (replace (CHARLOOKS CLULINE) of NEWPCLOOKS
+                                         with (EQ UNDERLINE 'ON]
+                       [AND OVERLINE (replace (CHARLOOKS CLOLINE) of NEWPCLOOKS
+                                        with (EQ OVERLINE 'ON]
+                       [AND STRIKEOUT (replace (CHARLOOKS CLSTRIKE) of NEWPCLOOKS
+                                         with (EQ STRIKEOUT 'ON]
+                       [AND INVISIBLE (replace (CHARLOOKS CLINVISIBLE) of NEWPCLOOKS
+                                         with (EQ INVISIBLE 'ON]
+                       (AND SUPERSCRIPT (replace (CHARLOOKS CLOFFSET) of NEWPCLOOKS with SUPERSCRIPT)
+                            )
+                       (AND SUBSCRIPT (replace (CHARLOOKS CLOFFSET) of NEWPCLOOKS with (IMINUS 
+                                                                                            SUBSCRIPT
+                                                                                              )))
+                       (AND STYLESET (replace (CHARLOOKS CLSTYLE) of NEWPCLOOKS with STYLE))
+                       (AND UISET (replace (CHARLOOKS CLUSERINFO) of NEWPCLOOKS with USERINFO))
+                       (AND OFFSETINCREMENT (replace (CHARLOOKS CLOFFSET) of NEWPCLOOKS
+                                               with (IPLUS (OR (fetch (CHARLOOKS CLOFFSET)
+                                                                  of NEWPCLOOKS)
+                                                               0)
+                                                           OFFSETINCREMENT)))
+                       [AND INVERTED (replace (CHARLOOKS CLINVERTED) of NEWPCLOOKS
+                                        with (EQ INVERTED 'ON]
+                       (replace (CHARLOOKS CLSIZE) of NEWPCLOOKS with (FONTPROP NEWFONT 'SIZE))
+
+                       (* ;; "Assure that each set of looks appears only once in the world.")
+
+                       (replace (PIECE PLOOKS) of PC with (\TEDIT.UNIQUIFY.CHARLOOKS NEWPCLOOKS 
+                                                                 TEXTOBJ]
+                 (CL:WHEN (EQ PC CARETPC)
+                     (replace (TEXTOBJ CARETLOOKS) of TEXTOBJ with (\TEDIT.CARETLOOKS.VERIFY TEXTOBJ
+                                                                          NEWPCLOOKS)))
+              finally 
+
+                    (* ;; "The target pieces are from $$PC1 to $$PCN inclusive. ")
+
+                    (\TEDIT.MARK.LINES.DIRTY TEXTOBJ CH# (IPLUS CH# $$LENGTH))
+                    (CL:WHEN (fetch (TEXTOBJ \WINDOW) of TEXTOBJ)
+                        (\SHOWSEL (fetch (TEXTOBJ SEL) of TEXTOBJ)
+                               NIL NIL)
+                        (TEDIT.RESET.EXTEND.PENDING.DELETE (fetch (TEXTOBJ SEL) of TEXTOBJ))
+                        (TEDIT.UPDATE.SCREEN TEXTOBJ)        (* ; "Update the screen image")
+                        (\FIXSEL (fetch (TEXTOBJ SEL) of TEXTOBJ)
+                               TEXTOBJ)
+                        (\SHOWSEL (fetch (TEXTOBJ SEL) of TEXTOBJ)
+                               NIL T))
+                    (BTVALIDATE '\TEDIT.CHANGE.LOOKS 'END TEXTOBJ)
+                    (RETURN (LIST OLDLOOKSLIST NLOOKSAVE $$PC1])
 
 (TEDIT.LOOKS
-  [LAMBDA (STREAM NEWLOOKS SELORCH# LEN)                     (* ; "Edited 30-May-91 21:41 by jds")
+  [LAMBDA (TSTREAM NEWLOOKS SELORCH# LEN)                    (* ; "Edited 13-Aug-2022 21:44 by rmk")
+                                                             (* ; "Edited 30-May-91 21:41 by jds")
 
     (* ;; "Programmatic interface for character looks in TEdit")
 
-    (PROG ((TEXTOBJ (TEXTOBJ STREAM))
+    (PROG ((TEXTOBJ (TEXTOBJ TSTREAM))
            TSEL CHANGERESULT)
           [SETQ TSEL (COND
                         ((type? SELECTION SELORCH#)
                          SELORCH#)
-                        (SELORCH# (TEDIT.SETSEL TEXTOBJ SELORCH# LEN 'LEFT))
+                        (SELORCH# (TEDIT.SETSEL TSTREAM SELORCH# LEN 'LEFT))
                         (T (fetch (TEXTOBJ SEL) of TEXTOBJ]
-          (COND
-             ((NOT (fetch (SELECTION SET) of TSEL))          (* ; 
+          (CL:UNLESS (fetch (SELECTION SET) of TSEL)         (* ; 
                                            "No selection to change the looks of.  Can't do anything!")
-              (RETURN)))
-          (COND
-             ((SETQ CHANGERESULT (\TEDIT.CHANGE.LOOKS STREAM NEWLOOKS (fetch (SELECTION CH#)
-                                                                         of TSEL)
-                                        (fetch (SELECTION DCH) of TSEL)))
+              (RETURN))
+          (CL:WHEN (SETQ CHANGERESULT (\TEDIT.CHANGE.LOOKS TSTREAM NEWLOOKS (fetch (SELECTION CH#)
+                                                                               of TSEL)
+                                             (fetch (SELECTION DCH) of TSEL)))
                                                              (* ; "Go actually change the looks")
+                                                             (* ; "Save this action for undo/redo")
               (\TEDIT.HISTORYADD TEXTOBJ (create TEDITHISTORYEVENT
                                                 THACTION _ 'Looks
                                                 THLEN _ (fetch (SELECTION DCH) of TSEL)
                                                 THCH# _ (fetch (SELECTION CH#) of TSEL)
                                                 THFIRSTPIECE _ (CADDR CHANGERESULT)
                                                 THOLDINFO _ (CAR CHANGERESULT)
-                                                THAUXINFO _ (CADR CHANGERESULT)))
-                                                             (* ; "Save this action for undo/redo")
-              ])
+                                                THAUXINFO _ (CADR CHANGERESULT))))])
 
 (\TEDIT.LOOKS
   [LAMBDA (TEXTOBJ)                                          (* ; "Edited 30-May-91 21:41 by jds")
@@ -1278,7 +1462,8 @@
           FONT])
 
 (TEDIT.GET.LOOKS
-  [LAMBDA (TEXTOBJ CH#ORCHARLOOKS)                           (* ; "Edited 30-May-91 21:44 by jds")
+  [LAMBDA (TEXTOBJ CH#ORCHARLOOKS)                           (* ; "Edited 22-Aug-2022 13:14 by rmk")
+                                                             (* ; "Edited 30-May-91 21:44 by jds")
                                                              (* Return a PLIST of character looks)
     (PROG ((TEXTOBJ (TEXTOBJ TEXTOBJ))
            LOOKS FONT NLOOKS)
@@ -1294,21 +1479,21 @@
               (SETQ LOOKS (fetch (PIECE PLOOKS) of (\CHTOPC (IMIN (fetch (TEXTOBJ TEXTLEN)
                                                                      of TEXTOBJ)
                                                                   CH#ORCHARLOOKS)
-                                                          (fetch (TEXTOBJ PCTB) of TEXTOBJ]
+                                                          TEXTOBJ]
              [(type? SELECTION CH#ORCHARLOOKS)               (* Get the looks of the selected text)
               (SETQ LOOKS (fetch (PIECE PLOOKS) of (\CHTOPC (IMIN (fetch (TEXTOBJ TEXTLEN)
                                                                      of TEXTOBJ)
                                                                   (fetch (SELECTION CH#) of 
                                                                                        CH#ORCHARLOOKS
                                                                          ))
-                                                          (fetch (TEXTOBJ PCTB) of TEXTOBJ]
+                                                          TEXTOBJ]
              ((NULL CH#ORCHARLOOKS)                          (* Get the looks of the selected text)
               (SETQ LOOKS (fetch (PIECE PLOOKS) of (\CHTOPC (IMIN (fetch (TEXTOBJ TEXTLEN)
                                                                      of TEXTOBJ)
                                                                   (fetch (SELECTION CH#)
                                                                      of (fetch (TEXTOBJ SEL)
                                                                            of TEXTOBJ)))
-                                                          (fetch (TEXTOBJ PCTB) of TEXTOBJ]
+                                                          TEXTOBJ]
 
          (* * Now break the looks apart into a PROPLIST)
 
@@ -1403,7 +1588,8 @@
           NEWLOOKS])
 
 (TEDIT.GET.PARALOOKS
-  [LAMBDA (TEXTSTREAM SELORCH#)                              (* ; "Edited 30-May-91 21:44 by jds")
+  [LAMBDA (TEXTSTREAM SELORCH#)                              (* ; "Edited 22-Aug-2022 12:55 by rmk")
+                                                             (* ; "Edited 30-May-91 21:44 by jds")
                                                              (* ; 
               "Return a proplist of paragraph formatting information about the characters specified.")
     (LET* [(TEXTOBJ (TEXTOBJ TEXTSTREAM))
@@ -1417,7 +1603,7 @@
                                                                                          TEXTLEN)
                                                                                     of TEXTOBJ))))
                                                             (T (\ILLEGAL.ARG SEL)))
-                                                      (fetch (TEXTOBJ PCTB) of TEXTOBJ])
+                                                      TEXTOBJ])
 
 (\TEDIT.UNPARSE.PARALOOKS.LIST
   [LAMBDA (FMTSPEC)                                          (* ; "Edited 30-May-91 21:48 by jds")
@@ -1464,15 +1650,15 @@
           (RETURN NEWLOOKS])
 
 (\TEDIT.PARSE.PARALOOKS.LIST
-  [LAMBDA (NEWLOOKS OLDLOOKS)                                (* ; 
+  [LAMBDA (NEWLOOKS OLDLOOKS)                                (* ; "Edited  5-Sep-2022 15:39 by rmk")
+                                                             (* ; 
                                                         "Edited  3-Jul-93 21:49 by sybalskY:MV:ENVOS")
                                                              (* ; 
                         "Apply a given format spec to the paragraphs which are included in this guy.")
-    (PROG (D PC PCNO NPC NCHLIM PCTB LASTLOOKS 1STLEFT LEFT RIGHT LEADB LEADA LLEAD TABSPECC QUADD 
-             NLOOKSAVE PC1 TYPE SUBTYPE TYPESET SUBTYPESET NEWBEFORESET NEWBEFORE NEWAFTERSET 
-             NEWAFTER KEEP KEEPSET HEADINGKEEP BASETOBASE BASESET REVISED REVISEDSET COLUMN COLUMNSET
-             USERINFO USERINFOSET SPECIALX SPECXSET SPECIALY SPECYSET STYLE STYLESET CHARSTYLES 
-             CHARSTYLESSET)
+    (PROG (D 1STLEFT LEFT RIGHT LEADB LEADA LLEAD TABSPECC QUADD NLOOKSAVE TYPE SUBTYPE TYPESET 
+             SUBTYPESET NEWBEFORESET NEWBEFORE NEWAFTERSET NEWAFTER KEEP KEEPSET HEADINGKEEP 
+             BASETOBASE BASESET REVISED REVISEDSET COLUMN COLUMNSET USERINFO USERINFOSET SPECIALX 
+             SPECXSET SPECIALY SPECYSET STYLE STYLESET CHARSTYLES CHARSTYLESSET)
           (COND
              ((type? FMTSPEC NEWLOOKS)                       (* ; 
                       "if we were given an FMTSPEC really replace the FMTSPEC of all pieces affected")
@@ -1573,7 +1759,9 @@ CONS pair of default width and LIST of TAB record instances")
                 (RETURN NEWLOOKS])
 
 (TEDIT.PARALOOKS
-  [LAMBDA (TEXTOBJ NEWLOOKS SEL LEN)                         (* ; "Edited 21-Apr-93 18:44 by jds")
+  [LAMBDA (TEXTOBJ NEWLOOKS SEL LEN)                         (* ; "Edited  9-Sep-2022 17:05 by rmk")
+                                                             (* ; "Edited 22-Aug-2022 13:22 by rmk")
+                                                             (* ; "Edited 21-Apr-93 18:44 by jds")
 
     (* ;; "Apply a given format spec to the paragraphs which are included in this guy.")
 
@@ -1584,11 +1772,11 @@ CONS pair of default width and LIST of TAB record instances")
                    ((FIXP SEL)
                     (TEDIT.SETSEL TEXTOBJ SEL LEN 'RIGHT))
                    (T (fetch (TEXTOBJ SEL) of TEXTOBJ]
-           CH# CHLIM REPLACEALLFIELDS D PC PCNO NPC NCHLIM PCTB LASTLOOKS 1STLEFT LEFT RIGHT LEADB 
-           LEADA BLEAD BLEADSET LLEAD TABSPECC QUADD NLOOKSAVE PC1 OLDLOOKSLIST TYPE SUBTYPE TYPESET
-           SUBTYPESET SPECIALX SPECIALY NEWBEFORESET NEWBEFORE NEWAFTERSET NEWAFTER KEEP KEEPSET 
-           HEADINGKEEP BASETOBASE BASESET HCPYMODE HCPYSET USERINFO USERSET REVISED REVISEDSET STYLE
-           STYLESET CHARSTYLES CHARSTYLESSET COLUMN COLUMNSET STYLE STYLESET START-OF-PIECE OLDSTART)
+           CH# CHLIM REPLACEALLFIELDS D PC NPC NCHLIM LASTLOOKS 1STLEFT LEFT RIGHT LEADB LEADA BLEAD
+           BLEADSET LLEAD TABSPECC QUADD NLOOKSAVE PC1 OLDLOOKSLIST TYPE SUBTYPE TYPESET SUBTYPESET 
+           SPECIALX SPECIALY NEWBEFORESET NEWBEFORE NEWAFTERSET NEWAFTER KEEP KEEPSET HEADINGKEEP 
+           BASETOBASE BASESET HCPYMODE HCPYSET USERINFO USERSET REVISED REVISEDSET STYLE STYLESET 
+           CHARSTYLES CHARSTYLESSET COLUMN COLUMNSET STYLE STYLESET START-OF-PIECE OLDSTART)
           (SETQ CH# (fetch (SELECTION CH#) of SEL))          (* ; "First affected character")
           (SETQ CHLIM (IMIN (IMAX CH# (SUB1 (fetch (SELECTION CHLIM) of SEL)))
                             (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ)))
@@ -1603,10 +1791,9 @@ CONS pair of default width and LIST of TAB record instances")
               (RETURN)))
           (COND
              ((NOT (fetch (TEXTOBJ FORMATTEDP) of TEXTOBJ))
-              (\TEDIT.CONVERT.TO.FORMATTED TEXTOBJ)))
-          (SETQ PCTB (fetch (TEXTOBJ PCTB) of TEXTOBJ))      (* ; 
+              (\TEDIT.CONVERT.TO.FORMATTED TEXTOBJ)))        (* ; 
                                             "Because it may grow during the conversion to formatted.")
-          (SETQ PC (\CHTOPC CH# PCTB T))
+          (SETQ PC (\CHTOPC CH# TEXTOBJ T))
           (SETQ OLDSTART START-OF-PIECE)
           (SETQ PC1 PC)
           (SETQ NLOOKSAVE NEWLOOKS)
@@ -1858,23 +2045,25 @@ CONS pair of default width and LIST of TAB record instances")
               (\SHOWSEL SEL NIL T])
 
 (TEDIT.COPY.PARALOOKS
-  [LAMBDA (STREAM SOURCE DEST)                               (* ; "Edited 30-May-91 21:44 by jds")
+  [LAMBDA (STREAM SOURCE DEST)                               (* ; "Edited 22-Aug-2022 13:15 by rmk")
+                                                             (* ; "Edited 30-May-91 21:44 by jds")
 
     (* ;; "Copy the PARAGRAPH LOOKS from one place to another")
 
     (PROG ((TEXTOBJ (TEXTOBJ STREAM))
            LOOKS LEN)                                        (* ; 
                                            "get the paragraph looks of the first character of SOURCE")
-          [SETQ LOOKS (fetch (PIECE PPARALOOKS)
-                         of (CL:TYPECASE SOURCE
-                                ((SMALLP FIXP) (\CHTOPC SOURCE (fetch (TEXTOBJ PCTB) of TEXTOBJ)))
-                                (SELECTION 
-                                   (\SHOWSEL SOURCE NIL NIL) (* ; 
+          [SETQ LOOKS (fetch (PIECE PPARALOOKS) of (CL:TYPECASE SOURCE
+                                                       ((SMALLP FIXP) (\CHTOPC SOURCE TEXTOBJ))
+                                                       (SELECTION 
+                                                          (\SHOWSEL SOURCE NIL NIL)
+                                                             (* ; 
                                                              "Turn off the looks-source selection")
-                                   (\CHTOPC (fetch (SELECTION CH#) of SOURCE)
-                                          (fetch (TEXTOBJ PCTB) of (fetch (SELECTION \TEXTOBJ)
-                                                                      of SOURCE))))
-                                (T (\ILLEGAL.ARG SOURCE)))]
+                                                          (\CHTOPC (fetch (SELECTION CH#)
+                                                                      of SOURCE)
+                                                                 (fetch (SELECTION \TEXTOBJ)
+                                                                    of SOURCE)))
+                                                       (T (\ILLEGAL.ARG SOURCE)))]
           (COND
              [(type? SELECTION DEST)                         (* ; 
                                        "make sure that the destination selection is in this document")
@@ -1902,77 +2091,74 @@ CONS pair of default width and LIST of TAB record instances")
           (\SMALLPOUT FILE (GETHASH LOOKS PARAHASH])
 
 (\TEDIT.CONVERT.TO.FORMATTED
-  [LAMBDA (TEXTOBJ START END)                                (* ; "Edited 29-Apr-93 19:47 by jds")
-                                                             (* ; 
-                                        "Turn an unformatted TEdit file into a formatted TEdit file.")
-    (PROG ((NEXTCR (\TEDIT.BASICFIND TEXTOBJ (MKSTRING (CHARACTER (CHARCODE CR)))
-                          (OR START 1)))
-           (PCTB (fetch (TEXTOBJ PCTB) of TEXTOBJ))
-           [CRSTRING (MKSTRING (CHARACTER (CHARCODE CR]
-           (TEXTLEN (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ))
-           PCNO PC START-OF-PIECE)
-          [while (AND NEXTCR (ILEQ NEXTCR (OR END TEXTLEN)))
-             do                                              (* ; 
+  [LAMBDA (TEXTOBJ START END)                                (* ; "Edited 22-Aug-2022 13:56 by rmk")
+                                                             (* ; "Edited  6-Aug-2022 17:51 by rmk")
+                                                             (* ; "Edited 29-Apr-93 19:47 by jds")
+
+    (* ;; "Turn an unformatted TEdit file into a formatted TEdit file.")
+
+    (bind NEXTCR [CRSTRING _ (MKSTRING (CHARACTER (CHARCODE CR]
+          (TEXTLEN _ (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ))
+          PC START-OF-PIECE declare (SPECVARS START-OF-PIECE) first (SETQ NEXTCR
+                                                                     (\TEDIT.BASICFIND TEXTOBJ 
+                                                                            CRSTRING (OR START 1)))
+       while (AND NEXTCR (ILEQ NEXTCR (OR END TEXTLEN)))
+       do                                                    (* ; 
         "Look at each CR in the range given (or whole file) and insert paragraph breaks accordingly.")
-                (SETQ PC (\CHTOPC NEXTCR (fetch (TEXTOBJ PCTB) of TEXTOBJ)
-                                T))
-                [COND
-                   ((IEQP (ADD1 NEXTCR)
-                          START-OF-PIECE)                    (* ; "This para ends on a piece bound.")
-                    )
-                   (T                                        (* ; 
-                                                      "The CR is in mid-piece.  Split just after it.")
-                      (\SPLITPIECE PC (- (ADD1 NEXTCR)
-                                         START-OF-PIECE)
-                             TEXTOBJ PCNO)
-                      (SETQ PCTB (fetch (TEXTOBJ PCTB) of TEXTOBJ]
-                (replace (PIECE PPARALAST) of PC with T)
-                (SETQ NEXTCR (\TEDIT.BASICFIND TEXTOBJ CRSTRING (ADD1 NEXTCR]
-          (replace (TEXTOBJ FORMATTEDP) of TEXTOBJ with T)
-          (\TEDIT.MARK.LINES.DIRTY TEXTOBJ (OR START 1)
-                 (OR END TEXTLEN])
+          (SETQ PC (\CHTOPC NEXTCR TEXTOBJ T))
+          (CL:UNLESS (IEQP (ADD1 NEXTCR)
+                           START-OF-PIECE)
+
+              (* ;; "This para ends on a piece boundary.")
+
+              (* ;; "The CR is in mid-piece.  Split just after it.")
+
+              (\SPLITPIECE PC (- (ADD1 NEXTCR)
+                                 START-OF-PIECE)
+                     TEXTOBJ))
+          (replace (PIECE PPARALAST) of PC with T)
+          (SETQ NEXTCR (\TEDIT.BASICFIND TEXTOBJ CRSTRING (ADD1 NEXTCR)))
+       finally (replace (TEXTOBJ FORMATTEDP) of TEXTOBJ with T)
+             (\TEDIT.MARK.LINES.DIRTY TEXTOBJ (OR START 1)
+                    (OR END TEXTLEN])
 
 (\TEDIT.PARABOUNDS
-  [LAMBDA (TEXTOBJ CH#)                                      (* ; "Edited 21-Apr-93 18:22 by jds")
+  [LAMBDA (TEXTOBJ CH#)                                      (* ; "Edited  6-Sep-2022 08:55 by rmk")
+                                                             (* ; "Edited 22-Aug-2022 13:17 by rmk")
+                                                             (* ; "Edited 21-Apr-93 18:22 by jds")
 
     (* ;; "returns the first and last chars of the paragraph bracketed by CH#")
 
-    (PROG ((PCTB (fetch (TEXTOBJ PCTB) of TEXTOBJ))
-           PCNO NPC PC OPC BEGIN END PIECE START-OF-PIECE OLDSTART)
-          [COND
-             ((ZEROP (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ))   (* ; 
-                                                             "An empty document has no paragraphs.")
-              (RETURN (CONS 1 1]
-          (SETQ PC (\CHTOPC CH# PCTB T))
-          [COND
-             ((ATOM PC)                                      (* ; 
+    (if (ZEROP (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ))
+        then (CONS 1 1)
+      else (LET (PC OPC END PIECE START-OF-PIECE OLDSTART)
+                (SETQ PC (\CHTOPC CH# TEXTOBJ T))
+                (CL:UNLESS PC                                (* ; 
               "OOPS, we found the end-of-doc piece.  Back up to the last real piece in the document.")
-              (SETQ PC (\CHTOPC (FETCH (TEXTOBJ TEXTLEN) OF TEXTOBJ)
-                              PCTB T]
-          (SETQ PIECE PC)
-          (SETQ OPC PIECE)
-          (SETQ OLDSTART (IPLUS START-OF-PIECE (fetch (PIECE PLEN) of PC)))
-          (repeatwhile (AND PIECE (NOT (fetch (PIECE PPARALAST) of OPC)))
-             do                                              (* ; 
-                                                             "Find the piece that ends the paragraph")
+                    (SETQ PC (\CHTOPC (FETCH (TEXTOBJ TEXTLEN) OF TEXTOBJ)
+                                    TEXTOBJ T)))
+                (SETQ PIECE PC)
                 (SETQ OPC PIECE)
-                (add START-OF-PIECE (fetch (PIECE PLEN) of PIECE))
-                (SETQ PIECE (fetch (PIECE NEXTPIECE) of PIECE)))
-          [SETQ END (COND
-                       (PIECE                                (* ; 
+                (SETQ OLDSTART (IPLUS START-OF-PIECE (PLEN PC)))
+                (repeatwhile (AND PIECE (NOT (fetch (PIECE PPARALAST) of OPC)))
+                   do                                        (* ; 
+                                                             "Find the piece that ends the paragraph")
+                      (SETQ OPC PIECE)
+                      (add START-OF-PIECE (PLEN PIECE))
+                      (SETQ PIECE (NEXTPIECE PIECE)))
+                [SETQ END (COND
+                             (PIECE                          (* ; 
                           "This is the piece that ends the para.  Get the CH# of its final character")
-                              (SUB1 START-OF-PIECE))
-                       (T                                    (* ; 
+                                    (SUB1 START-OF-PIECE))
+                             (T                              (* ; 
                   "If PIECE winds up NIL, we walked off the end of the document, so use the textlen.")
-                          (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ]
-          (bind (PIECE _ PC) repeatwhile (AND PIECE (NOT (fetch (PIECE PPARALAST) of PIECE)))
-             do                                              (* ; 
+                                (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ]
+                (bind (PIECE _ PC) repeatwhile (AND PIECE (NOT (fetch (PIECE PPARALAST) of PIECE)))
+                   do                                        (* ; 
                                                 "Now find the piece that ends the previous paragraph")
-                (add OLDSTART (IMINUS (fetch (PIECE PLEN) of PIECE)))
-                (SETQ PIECE (fetch (PIECE PREVPIECE) of PIECE)))
-          (SETQ BEGIN OLDSTART)                              (* ; 
-                                      "Actually, NPC is pointing at the piece that starts THIS para.")
-          (RETURN (CONS BEGIN END])
+                      (add OLDSTART (IMINUS (PLEN PIECE)))
+                      (SETQ PIECE (PREVPIECE PIECE)))
+                (CONS OLDSTART END])
 
 (\TEDIT.FORMATTABS
   [LAMBDA (TEXTOBJ TABSPEC THISLINE CHBASE WBASE CURTX DFLTTABX MARGINXOFFSET PRIORTAB GRAIN 
@@ -2080,7 +2266,8 @@ CONS pair of default width and LIST of TAB record instances")
 (DEFINEQ
 
 (TEDIT.SUBPARALOOKS
-  [LAMBDA (TEXTSTREAM OLDLOOKSLIST NEWLOOKSLIST)             (* ; "Edited 26-Apr-93 15:13 by jds")
+  [LAMBDA (TEXTSTREAM OLDLOOKSLIST NEWLOOKSLIST)             (* ; "Edited 22-Aug-2022 13:13 by rmk")
+                                                             (* ; "Edited 26-Apr-93 15:13 by jds")
 
 (* ;;; "User entry to substitute one set of looks for another.  Goes through the whole textstream and whenever the looks match the characteristics of OLDLOOKSLIST which are specified, the characteristics listed in NEWLOOKSLIST are substituted.")
 
@@ -2088,8 +2275,7 @@ CONS pair of default width and LIST of TAB record instances")
            (NEWLOOKS (\TEDIT.PARSE.PARALOOKS.LIST NEWLOOKSLIST))
            (TEXTOBJ (TEXTOBJ TEXTSTREAM))
            (SEL (fetch (TEXTOBJ SEL) of TEXTOBJ))
-           (PCTB (fetch (TEXTOBJ PCTB) of TEXTOBJ))
-           (FIRSTPC (\CHTOPC 1 PCTB))
+           (FIRSTPC (\CHTOPC 1 TEXTOBJ))
            (FEATURELIST (for A on OLDLOOKSLIST by (CDDR A) collect (CAR A)))
            CHANGEMADE)
           (\SHOWSEL SEL NIL NIL)                             (* ; "Turn off the selection, first.")
@@ -2188,61 +2374,61 @@ CONS pair of default width and LIST of TAB record instances")
              (T (TEDIT.PROMPTPRINT TEXTOBJ "Please select some text to modify first" T])
 
 (TEDIT.UNDO.LOOKS
-  [LAMBDA (TEXTOBJ EVENT LEN CH# FIRSTPIECE)                 (* ; "Edited 30-May-91 21:44 by jds")
-                                                             (* Set looks on the current selection 
-                                                             from the TEDIT.CHARLOOKS.WINDOW)
-    (PROG ((SEL (fetch (TEXTOBJ SEL) of TEXTOBJ))
-           (PCTB (fetch (TEXTOBJ PCTB) of TEXTOBJ))
-           CHLIM
-           (OLDLOOKSLIST (fetch THOLDINFO of EVENT))
-           (NEWLOOKSLIST NIL)
-           (\INPC (fetch (TEXTOBJ \INSERTPC) of TEXTOBJ)))
-          (bind (PC _ (fetch THFIRSTPIECE of EVENT)) for OLDLOOKS in OLDLOOKSLIST
-             do (SETQ NEWLOOKSLIST (NCONC1 NEWLOOKSLIST (fetch (PIECE PLOOKS) of PC))) 
-                                                             (* Remember this for the undo.)
-                (replace (PIECE PLOOKS) of PC with OLDLOOKS) (* Give this piece its old looks)
-                [COND
-                   ((EQ PC \INPC)
-                    (replace (TEXTOBJ CARETLOOKS) of TEXTOBJ with (\TEDIT.CARETLOOKS.VERIFY
-                                                                   TEXTOBJ
-                                                                   (fetch (PIECE PLOOKS) of PC]
-                (SETQ PC (fetch (PIECE NEXTPIECE) of PC)))
-          (replace THOLDINFO of EVENT with NEWLOOKSLIST)     (* Remember the other looks in case we 
-                                                             UNDO the UNDO.)
-          (\TEDIT.MARK.LINES.DIRTY TEXTOBJ CH# (IPLUS (fetch THCH# of EVENT)
-                                                      (fetch THLEN of EVENT)
-                                                      -1))
-          (TEDIT.UPDATE.SCREEN TEXTOBJ)
-          (\TEDIT.SET.SEL.LOOKS SEL 'NORMAL)
-          (SETQ TEDIT.PENDINGDEL NIL)
-          (\FIXSEL SEL TEXTOBJ)
-          (\SHOWSEL SEL NIL T])
+  [LAMBDA (TEXTOBJ EVENT LEN CH#)                            (* ; "Edited  9-Sep-2022 08:42 by rmk")
+                                                             (* ; "Edited  5-Sep-2022 15:28 by rmk")
+                                                             (* ; "Edited 13-Aug-2022 23:37 by rmk")
+                                                             (* ; "Edited 30-May-91 21:44 by jds")
+
+    (* ;; "Set looks on the current selection from the TEDIT.CHARLOOKS.WINDOW")
+
+    (LET ((SEL (fetch (TEXTOBJ SEL) of TEXTOBJ)))            (* ; 
+                     "HINTPC is our best guess of the piece containing the caret.. Does this matter?")
+         (for (PC _ (fetch THFIRSTPIECE of EVENT))
+              (CARETPC _ (fetch (TEXTOBJ HINTPC) of TEXTOBJ)) by (NEXTPIECE PC) as OLDLOOKS
+            in (fetch THOLDINFO of EVENT) collect            (* ; "Remember this for the undo.")
+                                                (replace (PIECE PLOOKS) of PC with OLDLOOKS) 
+                                                             (* ; "Give this piece its old looks")
+                                                (CL:WHEN (EQ PC CARETPC)
+                                                    (replace (TEXTOBJ CARETLOOKS) of TEXTOBJ
+                                                       with (\TEDIT.CARETLOOKS.VERIFY TEXTOBJ 
+                                                                   OLDLOOKS)))
+                                                (fetch (PIECE PLOOKS) of PC)
+            finally (replace THOLDINFO of EVENT with $$VAL)) (* ; 
+                                                 "Remember the other looks in case we UNDO the UNDO.")
+         (\TEDIT.MARK.LINES.DIRTY TEXTOBJ CH# (IPLUS (fetch THCH# of EVENT)
+                                                     (fetch THLEN of EVENT)
+                                                     -1))
+         (TEDIT.UPDATE.SCREEN TEXTOBJ)
+         (\TEDIT.SET.SEL.LOOKS SEL 'NORMAL)
+         (SETQ TEDIT.PENDINGDEL NIL)
+         (\FIXSEL SEL TEXTOBJ)
+         (\SHOWSEL SEL NIL T])
 
 (TEDIT.UNDO.PARALOOKS
-  [LAMBDA (TEXTOBJ EVENT LEN CH# FIRSTPIECE)                 (* ; "Edited 30-May-91 21:44 by jds")
-                                                             (* Set looks on the current selection 
-                                                             from the TEDIT.CHARLOOKS.WINDOW)
-    (PROG ((SEL (fetch (TEXTOBJ SEL) of TEXTOBJ))
-           (PCTB (fetch (TEXTOBJ PCTB) of TEXTOBJ))
-           CHLIM
-           (OLDLOOKSLIST (fetch THOLDINFO of EVENT))
-           (NEWLOOKSLIST NIL))
-          (bind (PC _ (fetch THFIRSTPIECE of EVENT)) for OLDLOOKS in OLDLOOKSLIST
-             do (SETQ NEWLOOKSLIST (NCONC1 NEWLOOKSLIST (fetch (PIECE PPARALOOKS) of PC))) 
-                                                             (* Remember this for the undo.)
-                (replace (PIECE PPARALOOKS) of PC with OLDLOOKS) 
-                                                             (* Give this piece its old looks)
-                (SETQ PC (fetch (PIECE NEXTPIECE) of PC)))
-          (replace THOLDINFO of EVENT with NEWLOOKSLIST)     (* Remember the other looks in case we 
-                                                             UNDO the UNDO.)
-          (\TEDIT.MARK.LINES.DIRTY TEXTOBJ CH# (IPLUS (fetch THCH# of EVENT)
-                                                      (fetch THLEN of EVENT)
-                                                      -1))
-          (TEDIT.UPDATE.SCREEN TEXTOBJ)
-          (\TEDIT.SET.SEL.LOOKS SEL 'NORMAL)
-          (SETQ TEDIT.PENDINGDEL NIL)
-          (\FIXSEL SEL TEXTOBJ)
-          (\SHOWSEL SEL NIL T])
+  [LAMBDA (TEXTOBJ EVENT LEN CH# FIRSTPIECE)                 (* ; "Edited  5-Sep-2022 15:26 by rmk")
+                                                             (* ; "Edited 30-May-91 21:44 by jds")
+                                                             (* ; 
+                                 "Set looks on the current selection from the TEDIT.CHARLOOKS.WINDOW")
+    (LET ((SEL (fetch (TEXTOBJ SEL) of TEXTOBJ))
+          CHLIM
+          (OLDLOOKSLIST (fetch THOLDINFO of EVENT))
+          (NEWLOOKSLIST NIL))
+         (bind (PC _ (fetch THFIRSTPIECE of EVENT)) for OLDLOOKS in OLDLOOKSLIST
+            do (SETQ NEWLOOKSLIST (NCONC1 NEWLOOKSLIST (fetch (PIECE PPARALOOKS) of PC))) 
+                                                             (* ; "Remember this for the undo.")
+               (replace (PIECE PPARALOOKS) of PC with OLDLOOKS) 
+                                                             (* ; "Give this piece its old looks")
+               (SETQ PC (NEXTPIECE PC)))
+         (replace THOLDINFO of EVENT with NEWLOOKSLIST)      (* ; 
+                                                 "Remember the other looks in case we UNDO the UNDO.")
+         (\TEDIT.MARK.LINES.DIRTY TEXTOBJ CH# (IPLUS (fetch THCH# of EVENT)
+                                                     (fetch THLEN of EVENT)
+                                                     -1))
+         (TEDIT.UPDATE.SCREEN TEXTOBJ)
+         (\TEDIT.SET.SEL.LOOKS SEL 'NORMAL)
+         (SETQ TEDIT.PENDINGDEL NIL)
+         (\FIXSEL SEL TEXTOBJ)
+         (\SHOWSEL SEL NIL T])
 )
 
 
@@ -2303,12 +2489,12 @@ CONS pair of default width and LIST of TAB record instances")
 (DEFINEQ
 
 (\TEDIT.APPLY.STYLES
-  [LAMBDA (LOOKS PC TEXTOBJ)                                 (* ; 
+  [LAMBDA (LOOKS PC TEXTOBJ)                                 (* ; "Edited 11-Sep-2022 14:45 by rmk")
+                                                             (* ; 
                                                         "Edited  4-Jul-93 01:02 by sybalskY:MV:ENVOS")
 
     (* ;; "Given a set of looks, return the looks with the proper styles expanded out.")
 
-    (\TEDIT.CHECK (type? CHARLOOKS LOOKS))                   (* ; "Incoming thing has to be a LOOKS.")
     (OR (CDR (ASSOC LOOKS *TEDIT-CURRENTPARA-CACHE*))
         (CDR (ASSOC LOOKS *TEDIT-PARASTYLE-CACHE*))
         (LET ((STYLE (fetch (CHARLOOKS CLSTYLE) of LOOKS))
@@ -2468,25 +2654,25 @@ CONS pair of default width and LIST of TAB record instances")
 
 (RPAQ? *TEDIT-STYLESHEET-SAVE-LIST* )
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (8377 56776 (CHARLOOKS.FROM.FONT 8387 . 9892) (EQCLOOKS 9894 . 12309) (SAMECLOOKS 12311
- . 16155) (\TEDIT.UNIQUIFY.CHARLOOKS 16157 . 16712) (TEDIT.CARETLOOKS 16714 . 18316) (TEDIT.COPY.LOOKS
- 18318 . 20588) (\TEDIT.GET.CHARLOOKS 20590 . 23319) (\TEDIT.UNPARSE.CHARLOOKS.LIST 23321 . 26046) (
-TEDIT.MODIFYLOOKS 26048 . 27868) (TEDIT.NEW.FONT 27870 . 28290) (\TEDIT.PUT.CHARLOOKS 28292 . 30027) (
-\TEDIT.CARETLOOKS.VERIFY 30029 . 31104) (\TEDIT.GET.INSERT.CHARLOOKS 31106 . 34560) (
-\TEDIT.GET.TERMSA.WIDTHS 34562 . 34978) (\TEDIT.LOOKS.UPDATE 34980 . 46131) (
-\TEDIT.PARSE.CHARLOOKS.LIST 46133 . 54180) (\TEDIT.FLUSH.UNUSED.LOOKS 54182 . 56774)) (56824 59209 (
-TEDIT.SUBLOOKS 56834 . 59207)) (59210 86410 (\TEDIT.CHANGE.LOOKS 59220 . 77134) (TEDIT.LOOKS 77136 . 
-78970) (\TEDIT.LOOKS 78972 . 82154) (\TEDIT.FONTCOPY 82156 . 83522) (TEDIT.GET.LOOKS 83524 . 86408)) (
-86453 139794 (\TEDIT.GET.PARALOOKS 86463 . 86947) (EQFMTSPEC 86949 . 90450) (\TEDIT.UNIQUIFY.PARALOOKS
- 90452 . 91017) (TEDIT.GET.PARALOOKS 91019 . 92339) (\TEDIT.UNPARSE.PARALOOKS.LIST 92341 . 95532) (
-\TEDIT.PARSE.PARALOOKS.LIST 95534 . 103137) (TEDIT.PARALOOKS 103139 . 125355) (TEDIT.COPY.PARALOOKS 
-125357 . 127186) (\TEDIT.PUT.PARALOOKS 127188 . 128086) (\TEDIT.CONVERT.TO.FORMATTED 128088 . 130018) 
-(\TEDIT.PARABOUNDS 130020 . 132703) (\TEDIT.FORMATTABS 132705 . 139792)) (139854 145740 (
-TEDIT.SUBPARALOOKS 139864 . 142341) (SAMEPARALOOKS 142343 . 145738)) (145783 151119 (TEDIT.REDO.LOOKS 
-145793 . 146574) (TEDIT.REDO.PARALOOKS 146576 . 147334) (TEDIT.UNDO.LOOKS 147336 . 149393) (
-TEDIT.UNDO.PARALOOKS 149395 . 151117)) (151158 151696 (\TEDIT.MARK.REVISION 151168 . 151694)) (151758 
-152427 (\CREATE.TEDIT.DEFAULT.FMTSPEC 151768 . 152049) (\CREATE.TEDIT.FACE.MENU 152051 . 152223) (
-\CREATE.TEDIT.SIZE.MENU 152225 . 152425)) (152464 160866 (\TEDIT.APPLY.STYLES 152474 . 155842) (
-\TEDIT.APPLY.PARASTYLES 155844 . 157740) (TEDIT.STYLESHEET 157742 . 158809) (TEDIT.POP.STYLESHEET 
-158811 . 159479) (TEDIT.PUSH.STYLESHEET 159481 . 160221) (TEDIT.ADD.STYLESHEET 160223 . 160864)))))
+  (FILEMAP (NIL (24761 70402 (CHARLOOKS.FROM.FONT 24771 . 26276) (EQCLOOKS 26278 . 28693) (SAMECLOOKS 
+28695 . 32539) (\TEDIT.UNIQUIFY.CHARLOOKS 32541 . 33096) (TEDIT.CARETLOOKS 33098 . 34732) (
+TEDIT.COPY.LOOKS 34734 . 36736) (\TEDIT.GET.CHARLOOKS 36738 . 39798) (\TEDIT.UNPARSE.CHARLOOKS.LIST 
+39800 . 42525) (TEDIT.MODIFYLOOKS 42527 . 44347) (TEDIT.NEW.FONT 44349 . 44769) (\TEDIT.PUT.CHARLOOKS 
+44771 . 46484) (\TEDIT.CARETLOOKS.VERIFY 46486 . 47561) (\TEDIT.GET.INSERT.CHARLOOKS 47563 . 49952) (
+\TEDIT.GET.TERMSA.WIDTHS 49954 . 50370) (\TEDIT.LOOKS.UPDATE 50372 . 59757) (
+\TEDIT.PARSE.CHARLOOKS.LIST 59759 . 67806) (\TEDIT.FLUSH.UNUSED.LOOKS 67808 . 70400)) (70450 72887 (
+TEDIT.SUBLOOKS 70460 . 72885)) (72888 95182 (\TEDIT.CHANGE.LOOKS 72898 . 85816) (TEDIT.LOOKS 85818 . 
+87732) (\TEDIT.LOOKS 87734 . 90916) (\TEDIT.FONTCOPY 90918 . 92284) (TEDIT.GET.LOOKS 92286 . 95180)) (
+95225 148812 (\TEDIT.GET.PARALOOKS 95235 . 95719) (EQFMTSPEC 95721 . 99222) (\TEDIT.UNIQUIFY.PARALOOKS
+ 99224 . 99789) (TEDIT.GET.PARALOOKS 99791 . 101187) (\TEDIT.UNPARSE.PARALOOKS.LIST 101189 . 104380) (
+\TEDIT.PARSE.PARALOOKS.LIST 104382 . 112043) (TEDIT.PARALOOKS 112045 . 134411) (TEDIT.COPY.PARALOOKS 
+134413 . 136525) (\TEDIT.PUT.PARALOOKS 136527 . 137425) (\TEDIT.CONVERT.TO.FORMATTED 137427 . 139237) 
+(\TEDIT.PARABOUNDS 139239 . 141721) (\TEDIT.FORMATTABS 141723 . 148810)) (148872 154810 (
+TEDIT.SUBPARALOOKS 148882 . 151411) (SAMEPARALOOKS 151413 . 154808)) (154853 160383 (TEDIT.REDO.LOOKS 
+154863 . 155644) (TEDIT.REDO.PARALOOKS 155646 . 156404) (TEDIT.UNDO.LOOKS 156406 . 158673) (
+TEDIT.UNDO.PARALOOKS 158675 . 160381)) (160422 160960 (\TEDIT.MARK.REVISION 160432 . 160958)) (161022 
+161691 (\CREATE.TEDIT.DEFAULT.FMTSPEC 161032 . 161313) (\CREATE.TEDIT.FACE.MENU 161315 . 161487) (
+\CREATE.TEDIT.SIZE.MENU 161489 . 161689)) (161728 170128 (\TEDIT.APPLY.STYLES 161738 . 165104) (
+\TEDIT.APPLY.PARASTYLES 165106 . 167002) (TEDIT.STYLESHEET 167004 . 168071) (TEDIT.POP.STYLESHEET 
+168073 . 168741) (TEDIT.PUSH.STYLESHEET 168743 . 169483) (TEDIT.ADD.STYLESHEET 169485 . 170126)))))
 STOP

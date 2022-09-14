@@ -1,0 +1,269 @@
+(DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
+
+(FILECREATED "22-Aug-2022 23:40:43" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDITDEADFNS.;14 15117  
+
+      :CHANGES-TO (VARS TEDITDEADFNSCOMS)
+
+      :PREVIOUS-DATE "22-Aug-2022 14:56:12" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDITDEADFNS.;8)
+
+
+(PRETTYCOMPRINT TEDITDEADFNSCOMS)
+
+(RPAQQ TEDITDEADFNSCOMS ((FNS \CREATEPIECEORSTREAM \TEXTCLOSEF-SUBTREE \FINDPIECE FINDPCNODE 
+                              \CHTOPCNO \TEDIT.UPDATETREE \CLEARPCTB TEDIT.FIND.OBJECT.SUBTREE)
+                         (RECORDS PCTNODE)
+                         (FNS TREEGRAPHNODE DISPTREE)))
+(DEFINEQ
+
+(\CREATEPIECEORSTREAM
+  [LAMBDA (TEXT LOOKS PARALOOKS START END)                   (* ; "Edited  9-Aug-2022 21:14 by rmk")
+                                                             (* ; "Edited  8-Aug-2022 14:47 by rmk")
+                                                             (* ; "Edited 20-Jul-2022 08:09 by rmk")
+                                                             (* ; "Edited 13-Jul-2022 18:46 by rmk")
+                                                             (* ; "Edited 11-Jun-99 14:25 by rmk:")
+                                                             (* ; "Edited 31-May-91 14:18 by jds")
+
+    (* ;; "Given a source for text, build a PIECE to describe it.")
+
+    (* ;; "HOWEVER-- if it's aformatted file, return the stream for that file.")
+
+    (* ;; "RMK:  NOBODY CALLS THIS?")
+
+    (PROG (PC)
+          [SETQ PC (COND
+                      [(STRINGP TEXT)                        (* ; "It's a string.")
+                       (HELP "STRING TEXTS ARE NOW INTERPRETED AS FILE NAMES" TEXT)
+                                                             (* (create PIECE PCONTENTS _ TEXT PLEN 
+                                                             _ (NCHARS TEXT) PPARALAST _ NIL 
+                                                             PPARALOOKS _ PARALOOKS PFATP _
+                                                             (fetch (STRINGP FATSTRINGP) of TEXT) 
+                                                             PTYPE _ (CL:IF (fetch
+                                                             (STRINGP FATSTRINGP) of TEXT) 
+                                                             FATSTRING.PTYPE THINSTRING.PTYPE)))
+                       ]
+                      ((NULL TEXT)                           (* ; 
+                                                     "If it's NIL, use an empty string for the text.")
+                                                             (* (create PIECE PCONTENTS _
+                                                             (ALLOCSTRING 0) PLEN _ 0 PPARLAST _ 
+                                                             NIL PPARALOOKS _ PARALOOKS PTYPE _ 
+                                                             THINSTRING.PTYPE))
+                       )
+                      ((ATOM TEXT)                           (* ; "An atom is a file name.  Open it.")
+                       (HELP "ATOM TEXTS SHOULD ALREADY HAVE BEEN COERCED TO STREAMS" TEXT)
+                       [SETQ TEXT (OPENSTREAM TEXT 'INPUT 'OLD '(TYPE TEXT]
+                       (RETURN TEXT))
+                      ((STREAMP TEXT)                        (* ; 
+                                                             "Make sure it's open, then bail out")
+                       (CL:UNLESS (\GETSTREAM TEXT 'INPUT T)
+                           [OPENSTREAM TEXT 'INPUT 'OLD `((TYPE TEXT)
+                                                          (:EXTERNAL-FORMAT ,(GETSTREAMPROP TEXT 
+                                                                                    :EXTERNAL-FORMAT])
+                       (RETURN TEXT))
+                      ((type? PIECE TEXT)
+                       TEXT)
+                      (T                                     (* ; 
+                                                        "Anything else is coerced to a string first.")
+                         (HELP "ONLY STREAMS CAN BE EDITGED" TEXT)
+                         (SETQ TEXT (MKSTRING TEXT))         (* (create PIECE PCONTENTS _ TEXT PLEN 
+                                                             _ (NCHARS TEXT) PPARALAST _ NIL 
+                                                             PPARALOOKS _ PARALOOKS PFATP _
+                                                             (fetch (STRINGP FATSTRINGP) of TEXT) 
+                                                             PTYPE _ (CL:IF (fetch
+                                                             (STRINGP FATSTRINGP) of TEXT) 
+                                                             FATSTRING.PTYPE THINSTRING.PTYPE)))
+                         ]
+          (replace (PIECE PLOOKS) of PC with (OR LOOKS (CHARLOOKS.FROM.FONT DEFAULTFONT)))
+          (replace (PIECE PPARALOOKS) of PC with (OR PARALOOKS (create FMTSPEC using 
+                                                                                TEDIT.DEFAULT.FMTSPEC
+                                                                      )))
+          (RETURN PC])
+
+(\TEXTCLOSEF-SUBTREE
+  [LAMBDA (PCTREE)                                           (* ; "Edited  8-Aug-2022 14:36 by rmk")
+                                                             (* ; "Edited 31-May-91 14:00 by jds")
+
+    (* ;; "Run thru the pieces in the document, closing the underlying file")
+
+    (* ;; "by traverse pctree")
+
+    (* ;; "RMK:  Why not just run though the NEXTPIECE chain? BUT, NOBODY CALLS THIS?")
+
+    (LET (PC)
+         (CL:WHEN PCTREE
+             (SETQ PC (fetch (PCTNODE PCE) of PCTREE))
+             (AND (NOT (ATOM PC))
+                  (MEMB (ffetch (PIECE PTYPE) of PC)
+                        FILE.PTYPES)
+                  (CLOSEF? (fetch (PIECE PCONTENTS) of PC)))
+             (\TEXTCLOSEF-SUBTREE (fetch (PCTNODE LO) of PCTREE))
+             (\TEXTCLOSEF-SUBTREE (fetch (PCTNODE HI) of PCTREE)))])
+
+(\FINDPIECE
+  [LAMBDA (PC PCTB)                                          (* ; "Edited 31-May-91 13:53 by jds")
+
+         (* Given a piece and the pctb it's in, return the elt %# of the CH# entry for 
+         that piece in the table)
+
+    (LET ((NODE (FINDPCNODE PC PCTB)))
+         (INDEX (fetch (PCTNODE CHNUM) of NODE)
+                PCTB])
+
+(FINDPCNODE
+  [LAMBDA (PC PCTB)                                          (* ; "Edited 13-Apr-93 15:00 by jds")
+
+    (* ;; "Given a piece and the pctb it's in, return pcnode")
+
+    (fetch (PIECE PTREENODE) of PC])
+
+(\CHTOPCNO
+  [LAMBDA (CH# PCTB)                                        (* ; "Edited 13-Jun-90 00:47 by mitani")
+
+    (* ;; "Given a character # in a text object, and the object's piece table, return a pointer to the piece containing that character, else NIL")
+
+    (DECLARE (LOCALVARS . T))
+    (LET ((INDEX 0)
+          (TREE (fetch (PCTNODE HI) of PCTB))
+          CHNUM)
+         [while TREE do (COND
+                           [(IEQP CH# (SETQ CHNUM (fetch (PCTNODE CHNUM) of TREE)))
+                                                             (* ; "FIND NODE")
+                            (RETURN (SETQ INDEX (IPLUS INDEX (fetch (PCTNODE RANK) of TREE]
+                           ((IGREATERP CH# CHNUM)            (* ; "MOVE RIGHT")
+                            (SETQ INDEX (IPLUS INDEX (fetch (PCTNODE RANK) of TREE)))
+                            (SETQ TREE (fetch (PCTNODE HI) of TREE)))
+                           ((ILESSP CH# CHNUM)               (* ; "MOVE LEFT")
+                            (SETQ TREE (fetch (PCTNODE LO) of TREE]
+         (IMAX INDEX 1])
+
+(\TEDIT.UPDATETREE
+  [LAMBDA (PCNODE DELTA)                                     (* ; "Edited  9-Aug-2022 23:33 by rmk")
+                                                             (* ; 
+                                                        "Edited 21-Mar-95 14:40 by sybalsky:mv:envos")
+
+    (* ;; "The size of the text represented by PCNODE has grown by DELTA.  Update all of PCNODE's parents to reflect the change in length.")
+
+    (bind (UPWARD _ (fetch (BTREENODE UPWARD) of PCNODE)) while UPWARD
+       do 
+          (* ;; "Keep going up in the tree til we hit the top.")
+
+          (for ITEM# from 0 by 4 as ITEM from 1 to (ffetch (BTREENODE COUNT) of UPWARD)
+             when (EQ PCNODE (\GETBASEPTR UPWARD ITEM#))
+             do [\PUTBASEFIXP UPWARD (IPLUS ITEM# 2)
+                       (IPLUS DELTA (\GETBASEFIXP UPWARD (IPLUS ITEM# 2]
+                (add (fetch (BTREENODE TOTLEN) of UPWARD)
+                     DELTA)
+                (RETURN) FINALLY (HELP "PCNODE not in upward node."))
+          (SETQ PCNODE UPWARD)
+          (SETQ UPWARD (fetch (BTREENODE UPWARD) of PCNODE])
+
+(\CLEARPCTB
+  [LAMBDA (PCTB)                                             (* ; "Edited 23-Feb-88 11:11 by jds")
+
+    (* ;; "(PROG ((OLASTPC (\EDITELT PCTB \PCTBLastPieceOffset))) (\EDITSETA PCTB \FirstPieceOffset 1) (* Create the LASTPIECE pseudo-piece placeholder in the first piece of the table) (\EDITSETA PCTB (ADD1 \FirstPieceOffset) (QUOTE LASTPIECE)) (for I from \SecondPieceOffset to OLASTPC do (* Now remove the other pieces, setting them to NIL) (\EDITSETA PCTB I NIL)) (\EDITSETA PCTB \PCTBLastPieceOffset (ADD1 \FirstPieceOffset)) (* Fix up the last-piece pointer) (\EDITSETA PCTB \PCTBFreePieces (IPLUS (\EDITELT PCTB \PCTBFreePieces) (LRSH (IDIFFERENCE OLASTPC (ADD1 \FirstPieceOffset)) 1))) (* And the free count of pieces.) (RETURN PCTB))")
+
+    (HELP])
+
+(TEDIT.FIND.OBJECT.SUBTREE
+  [LAMBDA (PCTB OBJ)                                         (* ; "Edited  6-Aug-2022 15:43 by rmk")
+                                                            (* ; "Edited 12-Jun-90 17:52 by mitani")
+    (COND
+       ((NULL PCTB)
+        NIL)
+       ((ATOM (fetch (PCTNODE PCE) of PCTB))
+        (OR (TEDIT.FIND.OBJECT.SUBTREE (fetch (PCTNODE LO) of PCTB)
+                   OBJ)
+            (TEDIT.FIND.OBJECT.SUBTREE (fetch (PCTNODE HI) of PCTB)
+                   OBJ)))
+       ((EQ (fetch (PIECE PCONTENTS) of (fetch (PCTNODE PCE) of PCTB))
+            OBJ)
+        (fetch (PCTNODE CHNUM) of PCTB))
+       (T (OR (TEDIT.FIND.OBJECT.SUBTREE (fetch (PCTNODE LO) of PCTB)
+                     OBJ)
+              (TEDIT.FIND.OBJECT.SUBTREE (fetch (PCTNODE HI) of PCTB)
+                     OBJ])
+)
+(DECLARE%: EVAL@COMPILE
+
+(DATATYPE PCTNODE (CHNUM                                     (* ; "Character #of piece in this node.")
+                         PCE                                 (* ; "PIECE ")
+                         LO                                  (* ; 
+                                                   "Subtree these nodes' ch#are less than this node.")
+                         HI                                  (* ; 
+                                                  " Subtree these nodes' ch#are more than this node.")
+                         BF                                  (* ; "Balance factor.")
+                                                             (* ; 
+                                              "1: Right(HI) Subtree is higher than left(lo) subtree.")
+                                                             (* ; 
+                                                  "0: Right subtree and left subtree are same height")
+                                                             (* ; 
+                                            "-1: Right(HI) Subtree is shorter than left(lo) subtree.")
+                         RANK                                (* ; "(# of nodes in left subtree) +1")
+                         )
+                  CHNUM _ 0 BF _ 0 RANK _ 1)
+)
+
+(/DECLAREDATATYPE 'PCTNODE '(POINTER POINTER POINTER POINTER POINTER POINTER)
+       '((PCTNODE 0 POINTER)
+         (PCTNODE 2 POINTER)
+         (PCTNODE 4 POINTER)
+         (PCTNODE 6 POINTER)
+         (PCTNODE 8 POINTER)
+         (PCTNODE 10 POINTER))
+       '12)
+(DEFINEQ
+
+(TREEGRAPHNODE
+  [LAMBDA (TREE PARENT DEPTH)                               (* ; "Edited 12-Jun-90 10:33 by mitani")
+    (LET (THISNODE NEWDEPTH NODEID LONODES HINODES BFNODE BFNODEID RANKNODE RANKNODEID)
+         (COND
+            ((ATOM TREE)
+             (LIST [fetch NODEID of (SETQ THISNODE (NODECREATE (CONS)
+                                                          TREE NIL NIL (LIST PARENT]
+                   (LIST THISNODE)))
+            ((OR (EQ DEPTH T)
+                 (AND (NUMBERP DEPTH)
+                      (>= DEPTH 0)))
+             (SETQ NEWDEPTH (COND
+                               ((NUMBERP DEPTH)
+                                (SUB1 DEPTH))
+                               (T DEPTH)))
+             (SETQ NODEID (fetch (PCTNODE PCE) of TREE))
+             (SETQ LONODES (TREEGRAPHNODE (fetch (PCTNODE LO) of TREE)
+                                  NODEID NEWDEPTH))
+             (SETQ HINODES (TREEGRAPHNODE (fetch (PCTNODE HI) of TREE)
+                                  NODEID NEWDEPTH))
+             (SETQ BFNODE (NODECREATE (SETQ BFNODEID (CONS))
+                                 (fetch (PCTNODE BF) of TREE)
+                                 NIL NIL (LIST NODEID)))
+             (SETQ RANKNODE (NODECREATE (SETQ RANKNODEID (CONS))
+                                   (fetch (PCTNODE RANK) of TREE)
+                                   NIL NIL (LIST NODEID)))
+             [SETQ THISNODE (NODECREATE NODEID (fetch (PCTNODE CHNUM) of TREE)
+                                   NIL
+                                   (LIST (CAR LONODES)
+                                         BFNODEID RANKNODEID (CAR HINODES))
+                                   (AND PARENT (LIST PARENT]
+             (LIST (fetch NODEID of THISNODE)
+                   (APPEND (LIST THISNODE BFNODE RANKNODE)
+                          (CADR LONODES)
+                          (CADR HINODES])
+
+(DISPTREE
+  [LAMBDA (TREE DEPTH)                                       (* ; "Edited 13-Apr-90 15:00 by ON")
+    (LET [(G (TREEGRAPHNODE TREE NIL (OR (NUMBERP DEPTH)
+                                         T]
+         (SHOWGRAPH (LAYOUTGRAPH (CADR G)
+                           (LIST (CAR G))
+                           '(VERTICAL))
+                NIL
+                #'(LAMBDA (X)
+                    (INSPECT (fetch NODEID of X])
+)
+(DECLARE%: DONTCOPY
+  (FILEMAP (NIL (705 11016 (\CREATEPIECEORSTREAM 715 . 5399) (\TEXTCLOSEF-SUBTREE 5401 . 6317) (
+\FINDPIECE 6319 . 6695) (FINDPCNODE 6697 . 6933) (\CHTOPCNO 6935 . 8089) (\TEDIT.UPDATETREE 8091 . 
+9302) (\CLEARPCTB 9304 . 10088) (TEDIT.FIND.OBJECT.SUBTREE 10090 . 11014)) (12658 15094 (TREEGRAPHNODE
+ 12668 . 14634) (DISPTREE 14636 . 15092)))))
+STOP

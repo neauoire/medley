@@ -1,19 +1,21 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED "14-Jul-2022 16:55:51" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-PAGE.;1 119264 
+(FILECREATED "13-Sep-2022 12:02:58" 
+{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-PAGE.;5 125175 
 
-      :PREVIOUS-DATE "14-Jul-2022 12:45:04" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-PAGE.;4)
+      :CHANGES-TO (VARS TEDIT-PAGECOMS)
+
+      :PREVIOUS-DATE "24-Aug-2022 11:45:47" 
+{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-PAGE.;3)
 
 
 (PRETTYCOMPRINT TEDIT-PAGECOMS)
 
 (RPAQQ TEDIT-PAGECOMS
-       ((FILES TEDIT-DCL)
-        (DECLARE%: EVAL@COMPILE DONTCOPY (CONSTANTS (\SCRATCHLEN 64))
-               (FILES (LOADCOMP)
-                      TEDIT-DCL))
+       ((DECLARE%: EVAL@COMPILE DONTCOPY (RECORDS TEDITPAPERSIZE)
+               (EXPORT (RECORDS PAGEFORMATTINGSTATE PAGEREGION)
+                      (FUNCTIONS \NEW-COLUMN-START \FIRST-COLUMN-START)))
+        (INITRECORDS PAGEREGION)
         (COMS 
               (* ;; "Page-numbering font specification/default")
 
@@ -84,21 +86,106 @@
               (* ;; "Foot note support")
 
               (FNS \TEDIT.FORMAT.FOOTNOTE))))
-
-(FILESLOAD TEDIT-DCL)
 (DECLARE%: EVAL@COMPILE DONTCOPY 
-(DECLARE%: EVAL@COMPILE 
+(DECLARE%: EVAL@COMPILE
 
-(RPAQQ \SCRATCHLEN 64)
+(RECORD TEDITPAPERSIZE (
+                        (* ;; 
+                        "Describe the size of a sheet of paper (in points), given a paper size-name.")
 
-
-(CONSTANTS (\SCRATCHLEN 64))
+                        TPSNAME                              (* ; "The name, as a litatom")
+                        TPSWIDTH                             (* ; "Paper width, in points")
+                        TPSHEIGHT                            (* ; "Paper Height, in points")
+                        TPSLANDSCAPE?                        (* ; 
+                                         "T if we have to rotate things to print them on this paper.")
+                        ))
 )
 
+(* "FOLLOWING DEFINITIONS EXPORTED")(DECLARE%: EVAL@COMPILE
 
-(FILESLOAD (LOADCOMP)
-       TEDIT-DCL)
+(RECORD PAGEFORMATTINGSTATE (
+                             (* ;; "Contains the state for a TEdit page-formatting job.")
+
+                             PAGE#                           (* ; 
+                                                           "The current page number.  Counted from 1")
+                             FIRSTPAGE
+
+                             (* ;; "T if the current page is the 'first page' .  Is set initially, and can be set again by the user at will.  Gets reset after each page image is printed.")
+
+                             MINPAGE#                        (* ; 
+                                                 "The page # of the first page to be printed, or NIL")
+                             MAXPAGE#                        (* ; 
+                                                  "The page # of the last page to be printed, or NIL")
+                             STATE                           (* ; "One of FORMATTING or SEARCHING.")
+                             REQUIREDREGIONTYPE              (* ; "If STATE is SEARCHING, the kind of box we're looking for.  If STATE is :SEARCHING-FOR-EQUIVALENT-PAGE, this is the page count for the matching page.")
+                             MAINSTREAM                      (* ; 
+                                                             "The principal textobj/stream source")
+                             CHNO                            (* ; "Our position in that stream")
+                             PRESSREGION                     (* ; "The press code's REGION info.")
+                             PAGEHEADINGS                    (* ; 
+                                  "The list of current values to be printed, indexed by heading type")
+                             PAGE#GENERATOR                  (* ; "List of page numbers;  later, maybe, a function to generate page numbers.  Used to fill in PAGE#TEXT, below")
+                             PAGE#TEXT                       (* ; "If special page numbers are in use, this is the place to take them from.  PAGE# is still used for recto/verso decisions &c")
+                             PAGEISRECTO                     (* ; 
+                                               "T if this is a recto page, NIL if it's a VERSO page.")
+                             PAGEFOOTNOTELINES               (* ; 
+                         "A list of extant footnote lines that should appear at the next opportunity")
+                             PAGEFLOATINGTOPLINES            (* ; 
+                           "A list of lines that should float to the top of the next available place")
+                             PAGECOUNT                       (* ; 
+                                                        "The number of pages we've formatted so far.")
+                             PAGELINECACHE                   (* ; "A cache for pre-created LINEDESCRIPTOR/THISLINE sets, to avoid the overhead of re-allocating them all the time")
+                             NEWPAGELAYOUT                   (* ; "If we switch page layouts in mid-document, this is where the new layout gets cached until we get started again.")
+                             )
+                            PAGECOUNT _ 0)
+
+(DATATYPE PAGEREGION (
+                      (* ;; 
+            "Describe a part of a page for page formatting.  Can be made into compound descriptions.")
+
+                      REGIONFILLMETHOD                       (* ; 
+                                    "What kind of a region this is -- TEXT, FOLIO, PAGEHEADING, etc.")
+                      REGIONSPEC                             (* ; 
+                                                             "The page-relative region this occupies")
+                      REGIONLOCALINFO                        (* ; "A PLIST for local information")
+                      (REGIONPARENT FULLXPOINTER)            (* ; 
+                                                        "The parent node for this box, for sub-boxes")
+                      REGIONSUBBOXES                         (* ; "The sub-regions of this region")
+                      REGIONTYPE                             (* ; "A user-settable region type")
+                      ))
 )
+
+(/DECLAREDATATYPE 'PAGEREGION '(POINTER POINTER POINTER FULLXPOINTER POINTER POINTER)
+       '((PAGEREGION 0 POINTER)
+         (PAGEREGION 2 POINTER)
+         (PAGEREGION 4 POINTER)
+         (PAGEREGION 6 FULLXPOINTER)
+         (PAGEREGION 8 POINTER)
+         (PAGEREGION 10 POINTER))
+       '12)
+
+(DEFMACRO \NEW-COLUMN-START (LINE FMTSPEC)
+   `(AND (FFETCH (LINEDESCRIPTOR 1STLN) OF ,LINE)
+         (EQ (FFETCH (FMTSPEC FMTCOLUMN) OF ,FMTSPEC)
+             'NEXT)))
+
+(DEFMACRO \FIRST-COLUMN-START (LINE FMTSPEC)
+   `(AND (FFETCH (LINEDESCRIPTOR 1STLN) OF ,LINE)
+         (EQ (FFETCH (FMTSPEC FMTCOLUMN) OF ,FMTSPEC)
+             'FIRST)))
+
+(* "END EXPORTED DEFINITIONS")
+
+)
+
+(/DECLAREDATATYPE 'PAGEREGION '(POINTER POINTER POINTER FULLXPOINTER POINTER POINTER)
+       '((PAGEREGION 0 POINTER)
+         (PAGEREGION 2 POINTER)
+         (PAGEREGION 4 POINTER)
+         (PAGEREGION 6 FULLXPOINTER)
+         (PAGEREGION 8 POINTER)
+         (PAGEREGION 10 POINTER))
+       '12)
 
 
 
@@ -801,7 +888,8 @@
           (RETURN LINES])
 
 (TEDIT.FORMATPAGE
-  [LAMBDA (TEXTOBJ PRSTREAM CH# REGION FORMATTINGSTATE)      (* ; 
+  [LAMBDA (TEXTOBJ PRSTREAM CH# REGION FORMATTINGSTATE)      (* ; "Edited 22-Aug-2022 13:22 by rmk")
+                                                             (* ; 
                                                         "Edited  4-Jul-93 00:29 by sybalskY:MV:ENVOS")
 
     (* ;; "Format a whole page -- run thru the page's sub-boxes filling them in by type:")
@@ -838,12 +926,11 @@
               (COND
                  ([AND (ILEQ CHNO TEXTLEN)
                        (EQ 'NEWPAGELAYOUT (fetch FMTPARATYPE
-                                             of (SETQ NEWPARALOOKS
-                                                 (\TEDIT.APPLY.PARASTYLES
-                                                  [fetch (PIECE PPARALOOKS)
-                                                     of (SETQ PC (\CHTOPC CHNO (fetch (TEXTOBJ PCTB)
-                                                                                  of TEXTOBJ]
-                                                  PC TEXTOBJ]
+                                             of (SETQ NEWPARALOOKS (\TEDIT.APPLY.PARASTYLES
+                                                                    (fetch (PIECE PPARALOOKS)
+                                                                       of (SETQ PC (\CHTOPC CHNO 
+                                                                                          TEXTOBJ)))
+                                                                    PC TEXTOBJ]
 
                   (* ;; "The first paragraph on this page starts a new page layout.")
 
@@ -892,10 +979,8 @@
               (DSPRIGHTMARGIN (fetch (REGION WIDTH) of PAGEREGION)
                      PRSTREAM)
               [while [AND (ILEQ CHNO TEXTLEN)
-                          (EQ 'PAGEHEADING (fetch FMTPARATYPE
-                                              of (fetch (PIECE PPARALOOKS)
-                                                    of (\CHTOPC CHNO (fetch (TEXTOBJ PCTB)
-                                                                        of TEXTOBJ]
+                          (EQ 'PAGEHEADING (fetch FMTPARATYPE of (fetch (PIECE PPARALOOKS)
+                                                                    of (\CHTOPC CHNO TEXTOBJ]
                  do                                          (* ; 
                                                 "Go thru any leading page heading paras on the page.")
                     (\TEDIT.HARDCOPY.FORMATLINE TEXTOBJ 1 CHNO THISLINE (SETQ LINE (create 
@@ -963,14 +1048,14 @@
          1])
 
 (TEDIT.FORMATTEXTBOX
-  [LAMBDA (TEXTOBJ PRSTREAM CH# PAGEREGION FORMATTINGSTATE)  (* ; 
+  [LAMBDA (TEXTOBJ PRSTREAM CH# PAGEREGION FORMATTINGSTATE)  (* ; "Edited 24-Aug-2022 11:45 by rmk")
+                                                             (* ; 
                                                         "Edited  3-Jul-93 22:14 by sybalskY:MV:ENVOS")
 
     (* ;; "Grab text from the TEXTOBJ, starting with CH#, and use it to fill REGION on a page.  Return a list of line descriptors which, taken together, fill the region.")
 
-    (COND
-       ((NEQ (fetch (PAGEFORMATTINGSTATE STATE) of FORMATTINGSTATE)
-             'SEARCHING)
+    (CL:UNLESS (EQ (fetch (PAGEFORMATTINGSTATE STATE) of FORMATTINGSTATE)
+                   'SEARCHING)
 
         (* ;; "Only format text if we're really formatting.")
 
@@ -1004,8 +1089,8 @@
                    (CL:MULTIPLE-VALUE-SETQ (PAGEFOOTNOTES FOOTNOTE-REMNANTS IGNORE KEPT-ONE-LINE)
                           (TEDIT.HARDCOPY-COLUMN-END PAGEFOOTNOTES LINE NIL 1 NIL REGION TEXTOBJ 
                                  FORMATTINGSTATE))
-                   [COND
-                      (KEPT-ONE-LINE (add COLUMNBOTTOM (ffetch (LINEDESCRIPTOR LHEIGHT) of LINE]
+                   (CL:WHEN KEPT-ONE-LINE
+                       (add COLUMNBOTTOM (ffetch (LINEDESCRIPTOR LHEIGHT) of LINE)))
                    (SETQ FOOTNOTELINES (APPEND FOOTNOTE-REMNANTS FOOTNOTELINES))
                    (RETURN))
                   (T (SETQ PAGEFOOTNOTES (NCONC1 PAGEFOOTNOTES LINE))
@@ -1051,8 +1136,7 @@
 
                        (* ;; "This paragraph is a footnote para.")
 
-                       (COND
-                          (FORCENEXTPAGE (HELP)))
+                       (CL:WHEN FORCENEXTPAGE (HELP))
                        (SETQ FOOTNOTELINES (\TEDIT.FORMAT.FOOTNOTE TEXTOBJ PRSTREAM LINE REGION 
                                                   PAGEREGION FORMATTINGSTATE))
                        [SETQ CHNO (PLUS 1 (fetch (LINEDESCRIPTOR CHARLIM) of (CAR (FLAST 
@@ -1089,10 +1173,9 @@
                                        [SETQ FINAL-CHNO (IMAX CHNO (ADD1 (fetch (LINEDESCRIPTOR
                                                                                  CHARLIM)
                                                                             of (CAR (FLAST REST]
-                                       [COND
-                                          (FIRSTLINE         (* ; "If this overflowing footnote line happens before any real text line, go ahead and update the colbottom, because we want to stop here anyhow.")
-                                                 (add COLUMNBOTTOM (fetch (LINEDESCRIPTOR LHEIGHT)
-                                                                      of LINE]
+                                       (CL:WHEN FIRSTLINE    (* ; "If this overflowing footnote line happens before any real text line, go ahead and update the colbottom, because we want to stop here anyhow.")
+                                           (add COLUMNBOTTOM (fetch (LINEDESCRIPTOR LHEIGHT)
+                                                                of LINE)))
                                        (RETURN))
                                       (T (SETQ PAGEFOOTNOTES (NCONC1 PAGEFOOTNOTES LINE))
                                          (add COLUMNBOTTOM (fetch (LINEDESCRIPTOR LHEIGHT)
@@ -1145,12 +1228,12 @@
                                                                       of PREVLINE))
                                                              0)))
                                                  (T 0]
-                                     (T (COND
-                                           [(\FIRST-COLUMN-START LINE FMTSPEC)
-                                            (SETQ YBOT (IDIFFERENCE (IMIN PRIOR-COLUMN-YBOT YBOT)
+                                     (T (SETQ YBOT (COND
+                                                      ((\FIRST-COLUMN-START LINE FMTSPEC)
+                                                       (IDIFFERENCE (IMIN PRIOR-COLUMN-YBOT YBOT)
                                                               (fetch (LINEDESCRIPTOR LHEIGHT)
-                                                                 of LINE]
-                                           (T (SETQ YBOT (IDIFFERENCE YBOT (fetch (LINEDESCRIPTOR
+                                                                 of LINE)))
+                                                      (T (IDIFFERENCE YBOT (fetch (LINEDESCRIPTOR
                                                                                    LHEIGHT)
                                                                               of LINE]
                             (T                               (* ; 
@@ -1182,35 +1265,31 @@
                              (SETQ FORCENEXTPAGE 'USERBREAK)
                              (SETQ FINAL-CHNO (fetch (LINEDESCRIPTOR CHAR1) of LINE))
                              (SETQ ORPHAN NIL)
-                             (COND
-                                ((NEQ NEWPAGETYPE T)         (* ; 
+                             (CL:UNLESS (EQ NEWPAGETYPE T)   (* ; 
                            "This isn't simply go to a new box;  we need to set up the search for it.")
                                  (replace (PAGEFORMATTINGSTATE STATE) of FORMATTINGSTATE
                                     with 'SEARCHING)
                                  (replace (PAGEFORMATTINGSTATE REQUIREDREGIONTYPE) of FORMATTINGSTATE
-                                    with NEWPAGETYPE)))
+                                    with NEWPAGETYPE))
                              NIL)
                             (T                               (* ; "This line is good;  use it.")
-                               (COND
-                                  ((AND (fetch (FMTSPEC FMTNEWPAGEAFTER) of (fetch (LINEDESCRIPTOR
-                                                                                    LFMTSPEC)
-                                                                               of LINE)))
+                               (CL:WHEN (AND (fetch (FMTSPEC FMTNEWPAGEAFTER)
+                                                of (fetch (LINEDESCRIPTOR LFMTSPEC) of LINE)))
                                                              (* ; 
    "We're supposed to put the line after this one at the start of a new page/column (any box, later)")
-                                   (SETQ BREAKAFTERLASTPARA T)))
+                                   (SETQ BREAKAFTERLASTPARA T))
                                (replace (LINEDESCRIPTOR YBOT) of LINE with YBOT)
-                               (COND
-                                  (PRIOR-COLUMN-YBOT (SETQ PRIOR-COLUMN-YBOT (IMIN PRIOR-COLUMN-YBOT
-                                                                                   YBOT)))
-                                  (T (SETQ PRIOR-COLUMN-YBOT YBOT)))
+                               (SETQ PRIOR-COLUMN-YBOT (COND
+                                                          (PRIOR-COLUMN-YBOT (IMIN PRIOR-COLUMN-YBOT
+                                                                                   YBOT))
+                                                          (T YBOT)))
                                (replace (LINEDESCRIPTOR YBASE) of LINE
                                   with (IPLUS YBOT (fetch (LINEDESCRIPTOR DESCENT) of LINE)))
-                               [COND
-                                  ((\FIRST-COLUMN-START LINE FMTSPEC)
+                               (CL:WHEN (\FIRST-COLUMN-START LINE FMTSPEC)
 
                                    (* ;; "This is the start of a new group of paragraphs to be lined up in columns.  Save the YBASE for these guys for the other columns.")
 
-                                   (SETQ COLUMN-YBASE (fetch (LINEDESCRIPTOR YBASE) of LINE]
+                                   (SETQ COLUMN-YBASE (fetch (LINEDESCRIPTOR YBASE) of LINE)))
                                (SETQ FIRSTLINE NIL)          (* ; 
                    "Note that we have put text out on this page/column/box, for first line checking.")
                                (SETQ CHNO (ADD1 (fetch (LINEDESCRIPTOR CHARLIM) of LINE)))
@@ -1221,7 +1300,7 @@
          (SETQ LINES (DREMOVE NIL LINES))                    (* ; 
    "Remove any NILs from the line list;  they're artifacts of running across page headings in-stream")
          (TEDIT.HARDCOPY-COLUMN-END LINES ORPHAN FORCENEXTPAGE CHNO PAGEFOOTNOTES REGION TEXTOBJ 
-                FORMATTINGSTATE FINAL-CHNO])
+                FORMATTINGSTATE FINAL-CHNO)))])
 
 (TEDIT.FORMATFOLIO
   [LAMBDA (TEXTOBJ PRSTREAM FORMATTINGSTATE REGIONSPEC)      (* ; "Edited 31-Jan-2022 23:33 by rmk")
@@ -1813,15 +1892,16 @@
           LINES])
 )
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (5090 8513 (TEDIT.GET.PAGEFRAMES 5100 . 5454) (TEDIT.PARSE.PAGEFRAMES 5456 . 6879) (
-TEDIT.PUT.PAGEFRAMES 6881 . 7511) (TEDIT.UNPARSE.PAGEFRAMES 7513 . 8511)) (8559 21110 (
-TEDIT.SINGLE.PAGEFORMAT 8569 . 18906) (TEDIT.COMPOUND.PAGEFORMAT 18908 . 19538) (TEDIT.PAGEFORMAT 
-19540 . 21108)) (21197 94262 (TEDIT.FORMAT.HARDCOPY 21207 . 31947) (TEDIT.FORMATBOX 31949 . 46666) (
-TEDIT.FORMATHEADING 46668 . 52835) (TEDIT.FORMATPAGE 52837 . 63761) (TEDIT.FORMATTEXTBOX 63763 . 82761
-) (TEDIT.FORMATFOLIO 82763 . 89282) (\TEDIT.FORMAT.FOUNDBOX? 89284 . 91343) (TEDIT.SKIP.SPECIALCOND 
-91345 . 94260)) (94342 97315 (TEDIT.HARDCOPY.PAGEHEADING 94352 . 97313)) (97424 106093 (
-TEDIT.HARDCOPY-COLUMN-END 97434 . 106091)) (106138 111079 (SCALEPAGEUNITS 106148 . 107289) (
-SCALEPAGEXUNITS 107291 . 108061) (SCALEPAGEYUNITS 108063 . 108834) (\TEDIT.PAPERHEIGHT 108836 . 109771
-) (\TEDIT.PAPERWIDTH 109773 . 111077)) (111495 115063 (ROMANNUMERALS 111505 . 115061)) (115099 119241 
-(\TEDIT.FORMAT.FOOTNOTE 115109 . 119239)))))
+  (FILEMAP (NIL (9564 9752 (\NEW-COLUMN-START 9564 . 9752)) (9754 9945 (\FIRST-COLUMN-START 9754 . 9945)
+) (11172 14595 (TEDIT.GET.PAGEFRAMES 11182 . 11536) (TEDIT.PARSE.PAGEFRAMES 11538 . 12961) (
+TEDIT.PUT.PAGEFRAMES 12963 . 13593) (TEDIT.UNPARSE.PAGEFRAMES 13595 . 14593)) (14641 27192 (
+TEDIT.SINGLE.PAGEFORMAT 14651 . 24988) (TEDIT.COMPOUND.PAGEFORMAT 24990 . 25620) (TEDIT.PAGEFORMAT 
+25622 . 27190)) (27279 100173 (TEDIT.FORMAT.HARDCOPY 27289 . 38029) (TEDIT.FORMATBOX 38031 . 52748) (
+TEDIT.FORMATHEADING 52750 . 58917) (TEDIT.FORMATPAGE 58919 . 69800) (TEDIT.FORMATTEXTBOX 69802 . 88672
+) (TEDIT.FORMATFOLIO 88674 . 95193) (\TEDIT.FORMAT.FOUNDBOX? 95195 . 97254) (TEDIT.SKIP.SPECIALCOND 
+97256 . 100171)) (100253 103226 (TEDIT.HARDCOPY.PAGEHEADING 100263 . 103224)) (103335 112004 (
+TEDIT.HARDCOPY-COLUMN-END 103345 . 112002)) (112049 116990 (SCALEPAGEUNITS 112059 . 113200) (
+SCALEPAGEXUNITS 113202 . 113972) (SCALEPAGEYUNITS 113974 . 114745) (\TEDIT.PAPERHEIGHT 114747 . 115682
+) (\TEDIT.PAPERWIDTH 115684 . 116988)) (117406 120974 (ROMANNUMERALS 117416 . 120972)) (121010 125152 
+(\TEDIT.FORMAT.FOOTNOTE 121020 . 125150)))))
 STOP

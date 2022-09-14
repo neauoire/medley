@@ -1,0 +1,95 @@
+(DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
+
+(FILECREATED "12-Sep-2022 14:58:28" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>BARTEST.;18 3429   
+
+      :CHANGES-TO (FNS BADREGION)
+
+      :PREVIOUS-DATE "11-Sep-2022 16:27:14" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>BARTEST.;17)
+
+
+(PRETTYCOMPRINT BARTESTCOMS)
+
+(RPAQQ BARTESTCOMS ((FNS BADBAR BADBAR1 BADBAR2 BADREGION GOODBAR SHOWBAD BARTEST)))
+(DEFINEQ
+
+(BADBAR
+  [LAMBDA NIL                                                (* ; "Edited 10-Sep-2022 10:13 by rmk")
+    (LET (MENUTEXT)
+         [SETQ MENUTEXT (OPENTEXTSTREAM NIL NIL NIL NIL '(FONT (MODERN 10]
+         (TEDIT.INSERT MENUTEXT "
+" 1)
+         (TEDIT.INSERT.OBJECT (MARGINBAR.CREATE -0.5 -0.5 -39.5 NIL 12)
+                MENUTEXT 2)
+         MENUTEXT])
+
+(BADBAR1
+  [LAMBDA NIL                                                (* ; "Edited 10-Sep-2022 09:22 by rmk")
+    (COPYTEXTSTREAM (\TEXTMENU.DOC.CREATE '((MB.TEXT "
+" NIL)
+                                            (MB.MARGINBAR NIL])
+
+(BADBAR2
+  [LAMBDA (NOLOOKS)                                          (* ; "Edited 10-Sep-2022 13:04 by rmk")
+
+    (* ;; "BAD IF LOOKS MISMATCH AND TEDIT AT END.  THE LOOKS HAVE ALREADY BEEN CHANGED. Bar insert has to be first in its paragraph.  Doesn't have to be first paragraph, doesn't have to be last insert.")
+
+    (* ;; "But: TEDIT has to be after insert with looks change")
+
+    (* ;; "Minimally bad:  Bar following empty paragraph has been inserted, then TEDIT display.")
+
+    (LET (MENUTEXT TEXT (CH# 1))
+         [SETQ MENUTEXT (OPENTEXTSTREAM NIL NIL NIL NIL '(FONT (MODERN 10]
+         (PROGN (SETQ TEXT "
+")
+                (TEDIT.INSERT MENUTEXT TEXT CH#)
+                (TEDIT.LOOKS MENUTEXT '(WEIGHT REGULAR)
+                       CH#
+                       (NCHARS TEXT))
+                (add CH# (NCHARS TEXT)))
+         (PROGN (TEDIT.INSERT.OBJECT (MARGINBAR.CREATE -0.5 -0.5 -39.5 NIL 12)
+                       MENUTEXT CH#)
+                (TEDIT.LOOKS MENUTEXT '(FACE ITALIC)
+                       CH# 1)
+                (add CH# 1))
+         MENUTEXT])
+
+(BADREGION
+  [LAMBDA NIL
+    (create REGION USING '(700 830 1032 150)
+                         WIDTH _ 500])
+
+(GOODBAR
+  [LAMBDA NIL                                                (* ; "Edited 10-Sep-2022 10:13 by rmk")
+    (COPYTEXTSTREAM ((\TEXTMENU.DOC.CREATE)
+                     '((MB.MARGINBAR NIL)
+                       (MB.TEXT "
+" NIL])
+
+(SHOWBAD
+  [LAMBDA (WIDTH TSTREAM)                                    (* ; "Edited 10-Sep-2022 11:00 by rmk")
+
+    (* ;; "Works if WIDTH =1032, fails if WIDTH = 1031")
+
+    (TEXTSTREAM (TEDIT (OR TSTREAM (COPYTEXTSTREAM BADBAR))
+                       (create REGION USING '(700 830 1032 150)
+                                            WIDTH _ WIDTH)
+                       NIL])
+
+(BARTEST
+  [LAMBDA (WIDTH)                                            (* ; "Edited 10-Sep-2022 09:04 by rmk")
+    (PRINTOUT T "EOL AFTER AT WIDTH " WIDTH T T)
+    (TEDIT GOODBAR (create REGION USING '(649 835 1032 150)
+                                        WIDTH _ WIDTH)
+           NIL)
+
+    (* ;; "BAD")
+
+    (PRINTOUT T "EOL BEFORE AT WIDTH " WIDTH T T)
+    (SHOWBAD])
+)
+(DECLARE%: DONTCOPY
+  (FILEMAP (NIL (479 3406 (BADBAR 489 . 863) (BADBAR1 865 . 1112) (BADBAR2 1114 . 2226) (BADREGION 2228
+ . 2348) (GOODBAR 2350 . 2599) (SHOWBAD 2601 . 3005) (BARTEST 3007 . 3404)))))
+STOP

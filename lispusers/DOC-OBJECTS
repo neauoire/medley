@@ -1,15 +1,16 @@
-(DEFINE-FILE-INFO READTABLE "INTERLISP" PACKAGE "INTERLISP" BASE 10)
-(FILECREATED " 9-May-2018 11:09:43" 
-{DSK}<Users>kaplan>Local>medley3.5>lispcore>lispusers>DOC-OBJECTS.;7 50515  
+(DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-      changes to%:  (FNS DOCOBJ-INCLUDE-EDIT DOCOBJ-INCLUDE-BEFOREHARDCOPYFN)
+(FILECREATED " 9-Sep-2022 16:11:50" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>lispusers>DOC-OBJECTS.;4 50675  
 
-      previous date%: " 9-May-2018 10:35:47" 
-{DSK}<Users>kaplan>Local>medley3.5>lispcore>lispusers>DOC-OBJECTS.;4)
+      :CHANGES-TO (FNS DOCOBJ-INVOKE-IMAGEOBJFN)
+
+      :PREVIOUS-DATE " 7-Sep-2022 23:11:38" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>lispusers>DOC-OBJECTS.;3)
 
 
 (* ; "
-Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights reserved.
+Copyright (c) 1986-1987, 1993, 2018 by Johannes A. G. M. Koomen.
 ")
 
 (PRETTYCOMPRINT DOC-OBJECTSCOMS)
@@ -17,7 +18,7 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
 (RPAQQ DOC-OBJECTSCOMS
        [
 
-(* ;;; "This TEdit subsystem implements an extensible facility originally intended to provide bibliography and citation capabilities.  The TEdit function GET.OBJ.FROM.USER, the one triggered by typing ^O, calls the function PROMPTFOREVALED which is redefined by this subsystem to be equivalent to the function DocObj-Acquire-Object.  This function inserts IMAGEOBJects into the current TEdit, and is driven by the variables DocObjectsMenu and DocObjectsMenuCommands (analogous to BackgroundMenu and BackgroundMenuCommands).  Each menu entry contains a form that, when EVAL'd, creates and returns a particular kind of IMAGEOBJ.  Note that this form is EVAL'd under the function DocObj-Acquire-Object, which runs under the function GET.OBJ.FROM.USER, which gets TEXTSTREAM and TEXTOBJ as arguments.  They can be (and are) used freely to record state or other desired info.  The image objects supplied by this subsystem are 'Eval`d Form' (i.e., the original behavior of ^O), 'Screen Snap' (equivalent to right-buttoning in the background while holding the SHIFT key down), etc.")
+(* ;;; "This TEdit subsystem implements an extensible facility originally intended to provide bibliography and citation capabilities.  The TEdit function GET.OBJ.FROM.USER, the one triggered by typing ^O, calls the function PROMPTFOREVALED which is redefined by this subsystem to be equivalent to the function DocObj-Acquire-Object.  This function inserts IMAGEOBJects into the current TEdit, and is driven by the variables DocObjectsMenu and DocObjectsMenuCommands (analogous to BackgroundMenu and BackgroundMenuCommands).  Each menu entry contains a form that, when EVAL'd, creates and returns a particular kind of IMAGEOBJ.  Note that this form is EVAL'd under the function DocObj-Acquire-Object, which runs under the function GET.OBJ.FROM.USER, which gets TEXTSTREAM and TEXTOBJ as arguments.  They can be (and are) used freely to record state or other desired info.  The image objects supplied by this subsystem are 'Eval`d Form' (i.e., the original behavior of ^O), 'Screen Snap' (equivalent to right-buttoning in the background while holding the SHIFT key down), etc.")
 
         (FILES (SYSLOAD)
                TEDIT IMAGEOBJ)
@@ -26,25 +27,25 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
         [INITVARS (DocObjectsMenuCommands NIL)
                (DocObjectsMenuFont (FONTCREATE '(MODERN 12 BOLD]
         (COMS 
-              (* ;; "The hook into GET.OBJ.FROM.USER")
+              (* ;; "The hook into GET.OBJ.FROM.USER")
 
               (FNS DOCOBJ-ACQUIRE-OBJECT DOCOBJ-INIT DOCOBJ-TEDIT-MENU-ENTRY DOCOBJ-GET-LOOKS 
                    DOCOBJ-REGISTER-OBJECT DOCOBJ-STRING-IMAGEBOX DOCOBJ-WAIT-MOUSE 
                    DOCOBJ-INVOKE-IMAGEOBJFN DOCOBJ-BEFOREHARDCOPYFN DOCOBJ-AFTERHARDCOPYFN))
         [COMS 
-              (* ;; "Eval'd Form")
+              (* ;; "Eval'd Form")
 
               (FNS DOCOBJ-ACQUIRE-EVALED-OBJECT)
               (ADDVARS (DocObjectsMenuCommands ("Eval'd Form" (DOCOBJ-ACQUIRE-EVALED-OBJECT)
                                                       "Insert the value of a form to be typed in"]
         [COMS 
-              (* ;; "Screen Snap")
+              (* ;; "Screen Snap")
 
               (FNS DOCOBJ-ACQUIRE-SNAPPED-OBJECT)
               (ADDVARS (DocObjectsMenuCommands ("Screen Snap" (DOCOBJ-ACQUIRE-SNAPPED-OBJECT)
                                                       "Insert a snap from the screen"]
         [COMS 
-              (* ;; "Time Stamp")
+              (* ;; "Time Stamp")
 
               (DECLARE%: DONTCOPY (RECORDS DOCOBJ-TIMESTAMP))
               (FILES (SYSLOAD)
@@ -58,7 +59,7 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
               (ADDVARS (DocObjectsMenuCommands ("Time Stamp" (DOCOBJ-MAKE-TIMESTAMP)
                                                       "Date & time this document is PUT"]
         [COMS 
-              (* ;; "File Stamp")
+              (* ;; "File Stamp")
 
               (FNS DOCOBJ-MAKE-FILESTAMP DOCOBJ-MAKE-FILESTAMP-IMAGEFNS DOCOBJ-FILESTAMP-COPYFN 
                    DOCOBJ-FILESTAMP-DISPLAYFN DOCOBJ-FILESTAMP-GETFN DOCOBJ-FILESTAMP-IMAGEBOXFN 
@@ -70,7 +71,7 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
                                                   "Name of file to which this document was last PUT."
                                                       ]
         (COMS 
-              (* ;; "Horizontal Rule")
+              (* ;; "Horizontal Rule")
 
               (FILES (SYSLOAD)
                      HRULE READNUMBER)
@@ -82,7 +83,7 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
                                                       "One or more horizontal rules")))
               (P (DOCOBJ-HRULE-INIT)))
         [COMS 
-              (* ;; "INCLUDE")
+              (* ;; "INCLUDE")
 
               (DECLARE%: EVAL@COMPILE DONTCOPY (RECORDS INCLOBJ))
               (FNS DOCOBJ-MAKE-INCLUDE DOCOBJ-MAKE-INCLUDE-IMAGEFNS DOCOBJ-INCLUDE-CREATE-OBJ 
@@ -260,19 +261,22 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
               then (RETURN NIL)) finally (RETURN T])
 
 (DOCOBJ-INVOKE-IMAGEOBJFN
-  [LAMBDA (CH# PIECE PC# IMAGEOBJFNNAME)                    (* ; "Edited 15-Oct-87 23:35 by Koomen")
-          
-          (* ;; "If PIECE is an IMAGEOBJ, invoke the function associated with the ImageObj property IMAGEOBJFNNAME on the IMAGEOBJ and the character position where the IMAGEOBJ is located. ")
+  [LAMBDA (CH# PIECE IMAGEOBJFNNAME)                         (* ; "Edited  9-Sep-2022 16:10 by rmk")
+                                                             (* ; "Edited  7-Sep-2022 23:11 by rmk")
+                                                             (* ; "Edited  6-Sep-2022 10:05 by rmk")
+                                                            (* ; "Edited 15-Oct-87 23:35 by Koomen")
+
+    (* ;; "If PIECE is an IMAGEOBJ, invoke the function associated with the ImageObj property IMAGEOBJFNNAME on the IMAGEOBJ and the character position where the IMAGEOBJ is located. ")
 
     (PROG (IMAGEOBJ IMAGEOBJFN)
-          (if (NOT (type? PIECE PIECE))
-              then (RETURN))
-          (SETQ IMAGEOBJ (fetch POBJ of PIECE))
-          (if (NOT (IMAGEOBJP IMAGEOBJ))
-              then (RETURN))
+          (CL:UNLESS (type? PIECE PIECE)
+                 (RETURN))
+          (SETQ IMAGEOBJ (PCONTENTS PIECE))
+          (CL:UNLESS (IMAGEOBJP IMAGEOBJ)
+                 (RETURN))
           (SETQ IMAGEOBJFN (IMAGEOBJPROP IMAGEOBJ IMAGEOBJFNNAME))
-          (if (AND IMAGEOBJFN (DEFINEDP IMAGEOBJFN))
-              then (APPLY* IMAGEOBJFN IMAGEOBJ CH# PIECE PC#])
+          (CL:WHEN (AND IMAGEOBJFN (DEFINEDP IMAGEOBJFN))
+                 (APPLY* IMAGEOBJFN IMAGEOBJ CH# PIECE])
 
 (DOCOBJ-BEFOREHARDCOPYFN
   [LAMBDA (TEXTSTREAM TEXTOBJ)                (* ; 
@@ -333,7 +337,7 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
 )
 
 (ADDTOVAR DocObjectsMenuCommands ("Eval'd Form" (DOCOBJ-ACQUIRE-EVALED-OBJECT)
-                                            "Insert the value of a form to be typed in"))
+                                        "Insert the value of a form to be typed in"))
 
 
 
@@ -347,7 +351,7 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
 )
 
 (ADDTOVAR DocObjectsMenuCommands ("Screen Snap" (DOCOBJ-ACQUIRE-SNAPPED-OBJECT)
-                                            "Insert a snap from the screen"))
+                                        "Insert a snap from the screen"))
 
 
 
@@ -470,7 +474,7 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
 (RPAQ? DOCOBJ-TIMESTAMP-IMAGEFNS (DOCOBJ-MAKE-TIMESTAMP-IMAGEFNS))
 
 (ADDTOVAR DocObjectsMenuCommands ("Time Stamp" (DOCOBJ-MAKE-TIMESTAMP)
-                                            "Date & time this document is PUT"))
+                                        "Date & time this document is PUT"))
 
 
 
@@ -582,7 +586,7 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
 (RPAQ? DOCOBJ-FILESTAMP-IMAGEFNS (DOCOBJ-MAKE-FILESTAMP-IMAGEFNS))
 
 (ADDTOVAR DocObjectsMenuCommands ("File Stamp" (DOCOBJ-MAKE-FILESTAMP)
-                                            "Name of file to which this document was last PUT."))
+                                        "Name of file to which this document was last PUT."))
 
 
 
@@ -654,7 +658,7 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
 (RPAQQ DOCOBJ-HRULE-BLANK-PAD NIL)
 
 (ADDTOVAR DocObjectsMenuCommands ("Horizontal Rule" (DOCOBJ-MAKE-HRULE)
-                                            "One or more horizontal rules"))
+                                        "One or more horizontal rules"))
 
 (DOCOBJ-HRULE-INIT)
 
@@ -902,19 +906,18 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
                     (fetch (TEXTOBJ \WINDOW) of TEXTOBJ])
 
 (DOCOBJ-INCLUDE-CLEANUPFN
-  [LAMBDA (TEXTSTREAM STARTPOS LEN)           (* ; 
-                                                "Edited  3-Jun-93 12:43 by sybalsky:mv:envos")
+  [LAMBDA (TEXTSTREAM STARTPOS LEN)                          (* ; "Edited  6-Sep-2022 10:08 by rmk")
+                                                             (* ; 
+                                                        "Edited  3-Jun-93 12:43 by sybalsky:mv:envos")
 
     (* ;; "Do the cleanup of removing an included file's pieces (and closing it) after hardcopying with inclusions.")
 
-    (LET* ((SEL (TEDIT.SETSEL TEXTSTREAM STARTPOS LEN))
-           (PCS (TEDIT.SELECTED.PIECES (TEXTOBJ TEXTSTREAM)
-                       SEL)))
-          (for PC in PCS when (AND (fetch (PIECE PFILE) of PC)
-                                               (OPENP (fetch (PIECE PFILE) of PC)))
-             do (CLOSEF (fetch (PIECE PFILE) of PC)))
-          (TEDIT.DELETE TEXTSTREAM STARTPOS LEN)
-          (BLOCK])
+    (for PC in (TEDIT.SELECTED.PIECES (TEXTOBJ TEXTSTREAM)
+                      (TEDIT.SETSEL TEXTSTREAM STARTPOS LEN)) when (MEMB (PTYPE PC)
+                                                                         FILE.PTYPES)
+       do (CLOSEF? (PCONTENTS PC)))
+    (TEDIT.DELETE TEXTSTREAM STARTPOS LEN)
+    (BLOCK])
 
 (DOCOBJ-INCLUDE-BUTTONEVENTINFN
   [LAMBDA (IMAGEOBJ WINDOWSTREAM SELECTION RELX RELY WINDOW HOSTSTREAM BUTTON)
@@ -999,7 +1002,7 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
 (RPAQ? DOCOBJ-INCLUDE-IMAGEFNS (DOCOBJ-MAKE-INCLUDE-IMAGEFNS))
 
 (ADDTOVAR DocObjectsMenuCommands ("Include" (DOCOBJ-MAKE-INCLUDE)
-                                            "Include another document right here when hardcopying"))
+                                        "Include another document right here when hardcopying"))
 (DECLARE%: DONTEVAL@LOAD DOCOPY 
 
 (DOCOBJ-INIT)
@@ -1008,35 +1011,34 @@ Copyright (c) 1986, 1987, 1993, 2018 by Johannes A. G. M. Koomen.  All rights re
 
 (PUTPROPS DOC-OBJECTS FILETYPE :TCOMPL)
 
-(PUTPROPS DOC-OBJECTS MAKEFILE-ENVIRONMENT (:READTABLE "INTERLISP" :PACKAGE "INTERLISP" :BASE
-                                                          10))
+(PUTPROPS DOC-OBJECTS MAKEFILE-ENVIRONMENT (:READTABLE "INTERLISP" :PACKAGE "INTERLISP" :BASE 10))
 )
 (PUTPROPS DOC-OBJECTS COPYRIGHT ("Johannes A. G. M. Koomen" 1986 1987 1993 2018))
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (7690 17683 (DOCOBJ-ACQUIRE-OBJECT 7700 . 8574) (DOCOBJ-INIT 8576 . 9204) (
-DOCOBJ-TEDIT-MENU-ENTRY 9206 . 9628) (DOCOBJ-GET-LOOKS 9630 . 12365) (DOCOBJ-REGISTER-OBJECT 12367 . 
-13021) (DOCOBJ-STRING-IMAGEBOX 13023 . 13971) (DOCOBJ-WAIT-MOUSE 13973 . 14433) (
-DOCOBJ-INVOKE-IMAGEOBJFN 14435 . 15219) (DOCOBJ-BEFOREHARDCOPYFN 15221 . 16614) (
-DOCOBJ-AFTERHARDCOPYFN 16616 . 17681)) (17713 17980 (DOCOBJ-ACQUIRE-EVALED-OBJECT 17723 . 17978)) (
-18184 18326 (DOCOBJ-ACQUIRE-SNAPPED-OBJECT 18194 . 18324)) (18669 23465 (DOCOBJ-EDIT-TIMESTAMP 18679
- . 19208) (DOCOBJ-MAKE-TIMESTAMP 19210 . 19621) (DOCOBJ-MAKE-TIMESTAMP-IMAGEFNS 19623 . 20693) (
-DOCOBJ-TIMESTAMP-BUTTONEVENTINFN 20695 . 21226) (DOCOBJ-TIMESTAMP-COPYFN 21228 . 21553) (
-DOCOBJ-TIMESTAMP-DISPLAYFN 21555 . 21848) (DOCOBJ-TIMESTAMP-GETFN 21850 . 22090) (
-DOCOBJ-TIMESTAMP-IMAGEBOXFN 22092 . 22448) (DOCOBJ-TIMESTAMP-PREPRINTFN 22450 . 22681) (
-DOCOBJ-TIMESTAMP-PUTFN 22683 . 23052) (DOCOBJ-TIMESTAMP-TO-STRING 23054 . 23463)) (23763 28070 (
-DOCOBJ-MAKE-FILESTAMP 23773 . 24114) (DOCOBJ-MAKE-FILESTAMP-IMAGEFNS 24116 . 25158) (
-DOCOBJ-FILESTAMP-COPYFN 25160 . 25475) (DOCOBJ-FILESTAMP-DISPLAYFN 25477 . 25765) (
-DOCOBJ-FILESTAMP-GETFN 25767 . 26120) (DOCOBJ-FILESTAMP-IMAGEBOXFN 26122 . 26460) (
-DOCOBJ-FILESTAMP-GET-FULLNAME 26462 . 27080) (DOCOBJ-FILESTAMP-NEW-FULLNAME 27082 . 27555) (
-DOCOBJ-FILESTAMP-PREPRINTFN 27557 . 27766) (DOCOBJ-FILESTAMP-PUTFN 27768 . 28068)) (28397 30894 (
-DOCOBJ-MAKE-HRULE 28407 . 28821) (DOCOBJ-EDIT-HRULE 28823 . 29295) (DOCOBJ-HRULE-INIT 29297 . 29629) (
-DOCOBJ-HRULE-GET-WIDTH 29631 . 30442) (DOCOBJ-HRULE-BUTTONEVENTINFN 30444 . 30892)) (31282 39731 (
-DOCOBJ-MAKE-INCLUDE 31292 . 31693) (DOCOBJ-MAKE-INCLUDE-IMAGEFNS 31695 . 32700) (
-DOCOBJ-INCLUDE-CREATE-OBJ 32702 . 33491) (DOCOBJ-INCLUDE-EDIT 33493 . 38092) (
-DOCOBJ-INCLUDE-EDIT-WINDOWP 38094 . 38956) (DOCOBJ-INCLUDE-RESET-OBJ 38958 . 39729)) (39732 49830 (
-DOCOBJ-INCLUDE-AFTERHARDCOPYFN 39742 . 40626) (DOCOBJ-INCLUDE-BEFOREHARDCOPYFN 40628 . 45403) (
-DOCOBJ-INCLUDE-CLEANUPFN 45405 . 46172) (DOCOBJ-INCLUDE-BUTTONEVENTINFN 46174 . 46708) (
-DOCOBJ-INCLUDE-COPYFN 46710 . 46928) (DOCOBJ-INCLUDE-DISPLAYFN 46930 . 47662) (DOCOBJ-INCLUDE-GETFN 
-47664 . 48387) (DOCOBJ-INCLUDE-IMAGEBOXFN 48389 . 49398) (DOCOBJ-INCLUDE-PREPRINTFN 49400 . 49619) (
-DOCOBJ-INCLUDE-PUTFN 49621 . 49828)))))
+  (FILEMAP (NIL (7650 17915 (DOCOBJ-ACQUIRE-OBJECT 7660 . 8534) (DOCOBJ-INIT 8536 . 9164) (
+DOCOBJ-TEDIT-MENU-ENTRY 9166 . 9588) (DOCOBJ-GET-LOOKS 9590 . 12325) (DOCOBJ-REGISTER-OBJECT 12327 . 
+12981) (DOCOBJ-STRING-IMAGEBOX 12983 . 13931) (DOCOBJ-WAIT-MOUSE 13933 . 14393) (
+DOCOBJ-INVOKE-IMAGEOBJFN 14395 . 15451) (DOCOBJ-BEFOREHARDCOPYFN 15453 . 16846) (
+DOCOBJ-AFTERHARDCOPYFN 16848 . 17913)) (17945 18212 (DOCOBJ-ACQUIRE-EVALED-OBJECT 17955 . 18210)) (
+18412 18554 (DOCOBJ-ACQUIRE-SNAPPED-OBJECT 18422 . 18552)) (18893 23689 (DOCOBJ-EDIT-TIMESTAMP 18903
+ . 19432) (DOCOBJ-MAKE-TIMESTAMP 19434 . 19845) (DOCOBJ-MAKE-TIMESTAMP-IMAGEFNS 19847 . 20917) (
+DOCOBJ-TIMESTAMP-BUTTONEVENTINFN 20919 . 21450) (DOCOBJ-TIMESTAMP-COPYFN 21452 . 21777) (
+DOCOBJ-TIMESTAMP-DISPLAYFN 21779 . 22072) (DOCOBJ-TIMESTAMP-GETFN 22074 . 22314) (
+DOCOBJ-TIMESTAMP-IMAGEBOXFN 22316 . 22672) (DOCOBJ-TIMESTAMP-PREPRINTFN 22674 . 22905) (
+DOCOBJ-TIMESTAMP-PUTFN 22907 . 23276) (DOCOBJ-TIMESTAMP-TO-STRING 23278 . 23687)) (23983 28290 (
+DOCOBJ-MAKE-FILESTAMP 23993 . 24334) (DOCOBJ-MAKE-FILESTAMP-IMAGEFNS 24336 . 25378) (
+DOCOBJ-FILESTAMP-COPYFN 25380 . 25695) (DOCOBJ-FILESTAMP-DISPLAYFN 25697 . 25985) (
+DOCOBJ-FILESTAMP-GETFN 25987 . 26340) (DOCOBJ-FILESTAMP-IMAGEBOXFN 26342 . 26680) (
+DOCOBJ-FILESTAMP-GET-FULLNAME 26682 . 27300) (DOCOBJ-FILESTAMP-NEW-FULLNAME 27302 . 27775) (
+DOCOBJ-FILESTAMP-PREPRINTFN 27777 . 27986) (DOCOBJ-FILESTAMP-PUTFN 27988 . 28288)) (28613 31110 (
+DOCOBJ-MAKE-HRULE 28623 . 29037) (DOCOBJ-EDIT-HRULE 29039 . 29511) (DOCOBJ-HRULE-INIT 29513 . 29845) (
+DOCOBJ-HRULE-GET-WIDTH 29847 . 30658) (DOCOBJ-HRULE-BUTTONEVENTINFN 30660 . 31108)) (31494 39943 (
+DOCOBJ-MAKE-INCLUDE 31504 . 31905) (DOCOBJ-MAKE-INCLUDE-IMAGEFNS 31907 . 32912) (
+DOCOBJ-INCLUDE-CREATE-OBJ 32914 . 33703) (DOCOBJ-INCLUDE-EDIT 33705 . 38304) (
+DOCOBJ-INCLUDE-EDIT-WINDOWP 38306 . 39168) (DOCOBJ-INCLUDE-RESET-OBJ 39170 . 39941)) (39944 50052 (
+DOCOBJ-INCLUDE-AFTERHARDCOPYFN 39954 . 40838) (DOCOBJ-INCLUDE-BEFOREHARDCOPYFN 40840 . 45615) (
+DOCOBJ-INCLUDE-CLEANUPFN 45617 . 46394) (DOCOBJ-INCLUDE-BUTTONEVENTINFN 46396 . 46930) (
+DOCOBJ-INCLUDE-COPYFN 46932 . 47150) (DOCOBJ-INCLUDE-DISPLAYFN 47152 . 47884) (DOCOBJ-INCLUDE-GETFN 
+47886 . 48609) (DOCOBJ-INCLUDE-IMAGEBOXFN 48611 . 49620) (DOCOBJ-INCLUDE-PREPRINTFN 49622 . 49841) (
+DOCOBJ-INCLUDE-PUTFN 49843 . 50050)))))
 STOP
