@@ -1,9 +1,9 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED "14-Sep-2022 21:48:02" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-SCREEN.;70 200072 
+(FILECREATED "15-Sep-2022 21:17:54" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-SCREEN.;73 199453 
 
-      :CHANGES-TO (FNS \DISPLAYLINE)
+      :CHANGES-TO (FNS \FORMATLINE \DISPLAYLINE)
 
       :PREVIOUS-DATE "13-Sep-2022 12:40:14" 
 {DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-SCREEN.;69)
@@ -242,7 +242,8 @@
 (DEFINEQ
 
 (\FORMATLINE
-  [LAMBDA (TEXTOBJ FMTSPEC CH#1 OLINE 1STLN)                 (* ; "Edited 11-Sep-2022 16:30 by rmk")
+  [LAMBDA (TEXTOBJ FMTSPEC CH#1 OLINE 1STLN)                 (* ; "Edited 15-Sep-2022 21:17 by rmk")
+                                                             (* ; "Edited 11-Sep-2022 16:30 by rmk")
                                                              (* ; "Edited  7-Sep-2022 18:12 by rmk")
                                                              (* ; "Edited  4-Sep-2022 18:37 by rmk")
 
@@ -252,15 +253,11 @@
 
     (BTVALIDATE '\FORMATLINE 'START TEXTOBJ)
     (SETQ CH#1 (IMAX CH#1 1))
-    (PROG ([LINE (OR OLINE (create LINEDESCRIPTOR
-                                  RIGHTMARGIN _ (fetch (TEXTOBJ WRIGHT) of TEXTOBJ)
-                                  YBOT _ (SUB1 (fetch (TEXTOBJ WBOTTOM) of TEXTOBJ]
-           (GATHERBLANK T)
+    (PROG ((GATHERBLANK T)
            (TLEN 0)
            (TEXTLEN (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ))
            (THISLINE (ffetch (TEXTOBJ THISLINE) of TEXTOBJ))
            (LOOKNO 0)
-           (INVISIBLERUNS 0)
            (ASCENT 0)
            (DESCENT 0)
            (PREVSP 0)
@@ -268,12 +265,12 @@
            (DEFAULTTAB 36)
            (DS (WINDOWPROP (CAR (fetch (TEXTOBJ \WINDOW) of TEXTOBJ))
                       'DSP))
-           CH#B CHNO LEFTEDGE TX DX TXB FORCEEND T1SPACE TXB1 DXB WIDTH LOOK#B FONT FONTWIDTHS TERMSA
-           CLOOKS TSTREAM CHLIST WLIST LOOKS ASCENTB DESCENTB INVISIBLERUNSB TABPENDING BOX PC DEVICE
-           SCALE NEWASCENT NEWDESCENT TABSPEC HARDCOPYMODE ORIGFMTSPEC PREVHYPH PREVDHYPH ORIGCHLIST
+           LINE CH#B CHNO LEFTEDGE TX DX TXB FORCEEND T1SPACE TXB1 DXB WIDTH LOOK#B FONT TERMSA 
+           CLOOKS TSTREAM CHLIST WLIST LOOKS ASCENTB DESCENTB TABPENDING BOX PC DEVICE SCALE 
+           NEWASCENT NEWDESCENT TABSPEC HARDCOPYMODE ORIGFMTSPEC PREVHYPH PREVDHYPH ORIGCHLIST 
            ORIGWLIST *TEDIT-CACHED-FMTSPEC* START-OF-PIECE)
-          (DECLARE (SPECVARS LOOKS CHLIST WLIST FONTWIDTHS CHNO ASCENT DESCENT LOOKNO LINE FONT 
-                          INVISIBLERUNS DEVICE SCALE NEWASCENT NEWDESCENT TLEN START-OF-PIECE))
+          (DECLARE (SPECVARS LOOKS CHLIST WLIST CHNO ASCENT DESCENT LOOKNO LINE FONT DEVICE SCALE 
+                          NEWASCENT NEWDESCENT TLEN START-OF-PIECE))
 
      (* ;; "Variables (TLEN = Current character count on the line")
 
@@ -307,6 +304,9 @@
 
      (* ;; "Maybe *TEDIT-CACHED-FMTSPEC* is supposed to be free, held over between calls?  If so, INITVARS in TEDIT-SCREEN")
 
+          [SETQ LINE (OR OLINE (create LINEDESCRIPTOR
+                                      RIGHTMARGIN _ (fetch (TEXTOBJ WRIGHT) of TEXTOBJ)
+                                      YBOT _ (SUB1 (fetch (TEXTOBJ WBOTTOM) of TEXTOBJ]
           (SETQ CHLIST (fetch (ARRAYP BASE) of (fetch (THISLINE CHARS) of THISLINE)))
           (SETQ ORIGCHLIST CHLIST)
           (SETQ WLIST (fetch (ARRAYP BASE) of (fetch (THISLINE WIDTHS) of THISLINE)))
@@ -489,7 +489,6 @@
                                     (SETQ NEWASCENT NIL))
                                 (SETQ ASCENTB ASCENT)
                                 (SETQ DESCENTB DESCENT)
-                                (SETQ INVISIBLERUNSB INVISIBLERUNS)
                                 (add %#BLANKS 1))
                          ((EOL CR LF)                        (* ; 
                                                        "Ch is a <Return>.  Force an end to the line.")
@@ -556,10 +555,9 @@
                               (SETQ LOOK#B LOOKNO)
                               (SETQ ASCENTB ASCENT)
                               (SETQ DESCENTB DESCENT)
-                              (SETQ PREVDHYPH NIL)
-                              (SETQ PREVHYPH NIL)            (* ; 
+                              (SETQ PREVDHYPH NIL)           (* ; 
               "We're now past needing any hyphens for line breaking, so forget the last hyphen spot.")
-                              (SETQ INVISIBLERUNSB INVISIBLERUNS))
+                              (SETQ PREVHYPH NIL))
                          (PROGN (COND
                                    ((AND (EQ CH (CHARCODE "0,377"))
                                          (NOT (ffetch (TEXTOBJ TXTNONSCHARS) of TEXTOBJ)))
@@ -607,8 +605,7 @@
                                                     (SETQ DX DXB)
                                                     (SETQ ASCENT ASCENTB)
                                                     (SETQ DESCENT DESCENTB)
-                                                    (SETQ LOOKNO LOOK#B)
-                                                    (SETQ INVISIBLERUNS INVISIBLERUNSB))
+                                                    (SETQ LOOKNO LOOK#B))
                                              ((OR PREVHYPH T1SPACE)
                                                              (* ; 
                                                         "Break the line at a previous breaking point")
@@ -617,8 +614,7 @@
                                               (SETQ DX DXB)
                                               (SETQ ASCENT ASCENTB)
                                               (SETQ DESCENT DESCENTB)
-                                              (SETQ LOOKNO LOOK#B)
-                                              (SETQ INVISIBLERUNS INVISIBLERUNSB))
+                                              (SETQ LOOKNO LOOK#B))
                                              ((IGREATERP TLEN 0)
                                               (freplace (LINEDESCRIPTOR CHARLIM) of LINE
                                                  with (IMAX (SUB1 CHNO)
@@ -719,8 +715,7 @@
                                                          (SETQ DXB DX)
                                                          (SETQ LOOK#B LOOKNO)
                                                          (SETQ ASCENTB ASCENT)
-                                                         (SETQ DESCENTB DESCENT)
-                                                         (SETQ INVISIBLERUNSB INVISIBLERUNS)))
+                                                         (SETQ DESCENTB DESCENT)))
                                                  ((- "357,045") 
                                                              (* ; "Hyphen, M-dash")
                                                       (SETQ PREVHYPH (ADD1 TLEN))
@@ -730,8 +725,7 @@
                                                       (SETQ LOOK#B LOOKNO)
                                                       (SETQ CH#B CHNO)
                                                       (SETQ ASCENTB ASCENT)
-                                                      (SETQ DESCENTB DESCENT)
-                                                      (SETQ INVISIBLERUNSB INVISIBLERUNS))
+                                                      (SETQ DESCENTB DESCENT))
                                                  ("357,042"  (* ; "non-breaking hyphen")
                                                             (\RPLPTR CHLIST 0 (CHARCODE "-")))
                                                  ("357,043"  (* ; "Discretionary hyphen")
@@ -744,7 +738,6 @@
                                                             (SETQ CH#B CHNO)
                                                             (SETQ ASCENTB ASCENT)
                                                             (SETQ DESCENTB DESCENT)
-                                                            (SETQ INVISIBLERUNSB INVISIBLERUNS)
                                                             (\RPLPTR WLIST 0 0)
                                                              (* ; 
                                                           "Unless we use it, the prevhyph is 0 wide.")
@@ -844,8 +837,7 @@
                            (T (IPLUS LOOKNO (IDIFFERENCE (IMIN (fetch (LINEDESCRIPTOR CHARLIM)
                                                                   of LINE)
                                                                TEXTLEN)
-                                                   (IPLUS INVISIBLERUNS (fetch (LINEDESCRIPTOR CHAR1)
-                                                                           of LINE]
+                                                   (fetch (LINEDESCRIPTOR CHAR1) of LINE]
           (\DOFORMATTING TEXTOBJ LINE (OR ORIGFMTSPEC FMTSPEC)
                  THISLINE %#BLANKS PREVSP 1STLN)
           (replace (LINEDESCRIPTOR LFMTSPEC) of LINE with FMTSPEC)
@@ -2838,16 +2830,16 @@
           (RETURN NEWYBOT])
 )
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (12953 76680 (\FORMATLINE 12963 . 55909) (\FORMATLINE.NEWNSCHARS 55911 . 56942) (
-\TEDIT.NSCHAR.RUN 56944 . 63626) (\TEDIT.PURGE.SPACES 63628 . 64022) (\DOFORMATTING 64024 . 76678)) (
-76681 97162 (\DISPLAYLINE 76691 . 93069) (\TEDIT.LINECACHE 93071 . 93799) (\TEDIT.CREATE.LINECACHE 
-93801 . 94637) (\TEDIT.BLTCHAR 94639 . 97160)) (97777 200049 (TEDIT.CR.UPDATESCREEN 97787 . 99006) (
-TEDIT.DELETELINE 99008 . 99930) (TEDIT.INSERT.DISPLAYTEXT 99932 . 116076) (TEDIT.INSERT.UPDATESCREEN 
-116078 . 122058) (TEDIT.UPDATE.SCREEN 122060 . 123160) (\BACKFORMAT 123162 . 126963) (\FILLWINDOW 
-126965 . 140671) (\FIXDLINES 140673 . 146885) (\FIXILINES 146887 . 152008) (\SHOWTEXT 152010 . 154479)
- (\TEDIT.ADJUST.LINES 154481 . 162059) (\TEDIT.CLEAR.SCREEN.BELOW.LINE 162061 . 162799) (
-\TEDIT.CLOSEUPLINES 162801 . 170268) (\TEDIT.COPY.LINEDESCRIPTOR 170270 . 173380) (
-\TEDIT.FIXCHANGEDLINE 173382 . 183689) (\TEDIT.FIXCHANGEDPART 183691 . 194999) (\TEDIT.INSERTLINE 
-195001 . 195829) (\TEDIT.LINE.LIST 195831 . 196229) (\TEDIT.MARK.LINES.DIRTY 196231 . 197748) (
-\TEDIT.NEXT.LINE.BOTTOM 197750 . 200047)))))
+  (FILEMAP (NIL (12965 76061 (\FORMATLINE 12975 . 55290) (\FORMATLINE.NEWNSCHARS 55292 . 56323) (
+\TEDIT.NSCHAR.RUN 56325 . 63007) (\TEDIT.PURGE.SPACES 63009 . 63403) (\DOFORMATTING 63405 . 76059)) (
+76062 96543 (\DISPLAYLINE 76072 . 92450) (\TEDIT.LINECACHE 92452 . 93180) (\TEDIT.CREATE.LINECACHE 
+93182 . 94018) (\TEDIT.BLTCHAR 94020 . 96541)) (97158 199430 (TEDIT.CR.UPDATESCREEN 97168 . 98387) (
+TEDIT.DELETELINE 98389 . 99311) (TEDIT.INSERT.DISPLAYTEXT 99313 . 115457) (TEDIT.INSERT.UPDATESCREEN 
+115459 . 121439) (TEDIT.UPDATE.SCREEN 121441 . 122541) (\BACKFORMAT 122543 . 126344) (\FILLWINDOW 
+126346 . 140052) (\FIXDLINES 140054 . 146266) (\FIXILINES 146268 . 151389) (\SHOWTEXT 151391 . 153860)
+ (\TEDIT.ADJUST.LINES 153862 . 161440) (\TEDIT.CLEAR.SCREEN.BELOW.LINE 161442 . 162180) (
+\TEDIT.CLOSEUPLINES 162182 . 169649) (\TEDIT.COPY.LINEDESCRIPTOR 169651 . 172761) (
+\TEDIT.FIXCHANGEDLINE 172763 . 183070) (\TEDIT.FIXCHANGEDPART 183072 . 194380) (\TEDIT.INSERTLINE 
+194382 . 195210) (\TEDIT.LINE.LIST 195212 . 195610) (\TEDIT.MARK.LINES.DIRTY 195612 . 197129) (
+\TEDIT.NEXT.LINE.BOTTOM 197131 . 199428)))))
 STOP

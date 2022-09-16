@@ -1,12 +1,12 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED "13-Sep-2022 12:37:00" 
-{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-LOOKS.;43 171116 
+(FILECREATED "15-Sep-2022 20:04:10" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-LOOKS.;45 166112 
 
-      :CHANGES-TO (VARS TEDIT-LOOKSCOMS)
+      :CHANGES-TO (FNS \TEDIT.LOOKS.UPDATE)
 
-      :PREVIOUS-DATE "11-Sep-2022 21:26:35" 
-{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-LOOKS.;40)
+      :PREVIOUS-DATE "13-Sep-2022 12:37:00" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-LOOKS.;43)
 
 
 (PRETTYCOMPRINT TEDIT-LOOKSCOMS)
@@ -839,134 +839,59 @@
           (RETURN NWIDTHS])
 
 (\TEDIT.LOOKS.UPDATE
-  [LAMBDA (TSTREAM PC)                                       (* ; "Edited 11-Sep-2022 21:26 by rmk")
+  [LAMBDA (TSTREAM PC)                                       (* ; "Edited 15-Sep-2022 20:01 by rmk")
+                                                             (* ; "Edited 11-Sep-2022 21:26 by rmk")
                                                              (* ; "Edited 30-May-91 21:47 by jds")
 
-(* ;;; "Called under \FORMATLINE, on which it depends.  At a piece boundary, update the line formatting fields such as ASCENT, DESCENT, etc.  Also, skip over invisible characters")
+(* ;;; "Called from \INSTALL.PIECE under \FORMATLINE only when the new piece has different looks than the previous piece. This updates the line formatting fields such as ASCENT, DESCENT, etc.  This assumes that the \INSTALL.PIECE caller has passed over any invisible pieces, and that TSTREAM is set up consistently with looks that match PC")
 
-    (DECLARE (USEDFREE LOOKS CHLIST WLIST FONTWIDTHS CHNO ASCENT DESCENT LOOKNO LINE FONT 
-                    INVISIBLERUNS NEWASCENT NEWDESCENT))
-    (CL:WHEN PC
-        (LET ((TEXTOBJ (fetch (TEXTSTREAM TEXTOBJ) of TSTREAM))
-              (ORIGPC PC)
-              TLOOKS NEWPC PARALOOKS PREVPC)
-             (COND
-                ([AND (PREVPIECE ORIGPC)
-                      (EQ (fetch (PIECE PPARALOOKS) of ORIGPC)
-                          (fetch (PIECE PPARALOOKS) of (PREVPIECE ORIGPC]
-                 (SETQ PARALOOKS (fetch (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM)))
-                (T (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS) of ORIGPC)
-                                          ORIGPC TEXTOBJ))
-                   (replace (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM with PARALOOKS)))
-             (SETQ TLOOKS (\TEDIT.APPLY.STYLES (PLOOKS ORIGPC)
-                                 ORIGPC TEXTOBJ))
-             (CL:WHEN (fetch (CHARLOOKS CLINVISIBLE) of TLOOKS)
-                                                             (* ; 
-         "We've hit a run of invisible characters.  Skip them, and insert a marker in the line cache")
-                 (add LOOKNO 1)                              (* ; 
+    (* ;; "RMK: Storing the  looks in theTEXTSTREAM here seems to be an attempt to avoid calls to the \TEDIT.APPLY.STYLES and \TEDIT.APPLY.PARASTYLES functions in the transition from piece to piece.  Presumably, the looks of each piece may be incomplete, and missing fields are filled in from the current (sequence of?) styles.  If the style is changed dynamically, then (also presumably) all of the currently displayed pieces should be upgraded.  But that doesn't appear to happen.")
+
+    (* ;; "A simpler implementation, whether dynamic or not, would be to expand the looks when the piece is created or the style changes, so that each piece is always references its completed looks.  But the piece also needs to keep track of its partial looks, for restyling and for saving.")
+
+    (* ;; "Style sheets are undocumented, I suspect that this was never really thought through.")
+
+    (CL:UNLESS PC
+        (RETFROM (FUNCTION \TEXTBIN)
+               NIL))
+    (DECLARE (USEDFREE LOOKS CHLIST WLIST CHNO ASCENT DESCENT LOOKNO LINE FONT NEWASCENT NEWDESCENT))
+    (LET ((CLOOKS (ffetch (TEXTSTREAM CURRENTLOOKS) of TSTREAM)))
+
+         (* ;; "")
+
+         (* ;; "On visisibility:  If we rely on \NEXT.VISIBLE.PIECE, then it should do the \TEDIT.APPLY.STYLES at each piece that it crosses over, to decide whether it should continue.")
+
+         (* ;; "Note:  Even if we pass over an invisible piece wrt formatting, we maystill have to make sure that CHNO knows the true character number for subsequent characters, for use in its tables.  (But if it only references the CHLIST, we can skip the \PCTOCH etc??)")
+
+         (SETQ FONT (if (type? FONTCLASS (fetch (CHARLOOKS CLFONT) of CLOOKS))
+                        then (FONTCOPY (fetch (CHARLOOKS CLFONT) of CLOOKS)
+                                    'DEVICE
+                                    'DISPLAY)
+                      else (ffetch (CHARLOOKS CLFONT) of CLOOKS)))
+
+         (* ;; "We could do the IMAX upstairs in \FORMATLINE, no need to retrieve the current value of ASCENT, DESCENT.")
+
+         [SETQ NEWASCENT (IMAX ASCENT (IPLUS (FONTPROP FONT 'ASCENT)
+                                             (OR (ffetch (CHARLOOKS CLOFFSET) of CLOOKS)
+                                                 0]
+         [SETQ NEWDESCENT (IMAX DESCENT (IDIFFERENCE (FONTPROP FONT 'DESCENT)
+                                               (OR (ffetch (CHARLOOKS CLOFFSET) of CLOOKS)
+                                                   0]
+         (add LOOKNO 1)                                      (* ; 
                                                              "Fix the counter of charlooks changes")
-                 (\EDITSETA LOOKS LOOKNO (PLEN ORIGPC))
-                 (\RPLPTR CHLIST 0 LMInvisibleRun)           (* ; 
-                                         "Note the existence of an invisible run of characters here.")
-                 (\RPLPTR WLIST 0 0)
-                 (add TLEN 1)
-                 (SETQ CHLIST (\ADDBASE CHLIST 2))
-                 (SETQ WLIST (\ADDBASE WLIST 2))
-                 (SETQ PREVPC ORIGPC)
-                 (SETQ ORIGPC (NEXTPIECE ORIGPC))
-                 (CL:WHEN (AND ORIGPC (NEQ (fetch (PIECE PPARALOOKS) of ORIGPC)
-                                           (fetch (PIECE PPARALOOKS) of PREVPC)))
-                     (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS) of ORIGPC)
-                                            ORIGPC TEXTOBJ))
-                     (replace (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM with PARALOOKS))
-                 (SETQ TLOOKS (AND ORIGPC (\TEDIT.APPLY.STYLES (PLOOKS ORIGPC)
-                                                 ORIGPC TEXTOBJ)))
-                 [while (AND ORIGPC (OR (ZEROP (PLEN ORIGPC))
-                                        (fetch (CHARLOOKS CLINVISIBLE) of TLOOKS)))
-                    do                                       (* ; 
-                  "Skip over this run of invisible characters --and any trailing run of empty pieces")
-                       (\EDITSETA LOOKS LOOKNO (IPLUS (PLEN ORIGPC)
-                                                      (\EDITELT LOOKS LOOKNO))) 
-                                                             (* ; 
-                                               "Note the invisible run length for the line displayer")
-                       (SETQ PREVPC ORIGPC)
-                       (SETQ ORIGPC (NEXTPIECE ORIGPC))
-                       (CL:WHEN (AND ORIGPC (NEQ (fetch (PIECE PPARALOOKS) of ORIGPC)
-                                                 (fetch (PIECE PPARALOOKS) of PREVPC)))
-                           (SETQ PARALOOKS (\TEDIT.APPLY.PARASTYLES (fetch (PIECE PPARALOOKS)
-                                                                       of ORIGPC)
-                                                  ORIGPC TEXTOBJ))
-                           (replace (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM with PARALOOKS))
-                       (SETQ TLOOKS (AND ORIGPC (\TEDIT.APPLY.STYLES (PLOOKS ORIGPC)
-                                                       ORIGPC TEXTOBJ]
-                 (SETQ ORIGPC (\NEXT.VISIBLE.PIECE ORIGPC))  (* ; 
-                                                   "Skip over any trailing pieces that are zero long")
-                 (add CHNO (\EDITELT LOOKS LOOKNO))
-                 (add INVISIBLERUNS (\EDITELT LOOKS LOOKNO)) (* ; 
-                                                "Keep track of how much invisible text we cross over")
-                 (SETQ NEWPC ORIGPC))
-             (COND
-                ([AND ORIGPC (NOT (EQCLOOKS TLOOKS (fetch (TEXTSTREAM CURRENTLOOKS) of TSTREAM]
-
-                 (* ;; "Only update looks if there's really a new piece to update them from, and the looks have really changed")
-
-                 (replace (TEXTSTREAM CURRENTLOOKS) of TSTREAM with TLOOKS)
-                 (replace (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM with PARALOOKS)
-                 [COND
-                    [(type? FONTCLASS (fetch (CHARLOOKS CLFONT) of TLOOKS))
-                                                             (* ; 
-                                                      "For FONTCLASSes, we have to get the real font")
-                     (SETQ FONT (FONTCOPY (fetch (CHARLOOKS CLFONT) of TLOOKS)
-                                       'DEVICE
-                                       'DISPLAY]
-                    (T                                       (* ; 
-                                                          "It's a font already, so no work is needed")
-                       (SETQ FONT (fetch (CHARLOOKS CLFONT) of TLOOKS]
-                 [SETQ NEWASCENT (IMAX ASCENT (IPLUS (FONTPROP FONT 'ASCENT)
-                                                     (OR (ffetch (CHARLOOKS CLOFFSET) of TLOOKS)
-                                                         0]
-                 [SETQ NEWDESCENT (IMAX DESCENT (IDIFFERENCE (FONTPROP FONT 'DESCENT)
-                                                       (OR (ffetch (CHARLOOKS CLOFFSET) of TLOOKS)
-                                                           0]
-                 (CL:WHEN (fetch (FMTSPEC FMTHARDCOPY) of PARALOOKS)
-                                                             (* ; 
-                                          "If it's a hardcopy-format line, grab the hardcopy widths.")
-                     (SETQ FONT (FONTCOPY (fetch (CHARLOOKS CLFONT) of TLOOKS)
-                                       'DEVICE DEVICE)))
-                 (add LOOKNO 1)                              (* ; 
-                                                             "Fix the counter of charlooks changes")
-                 (\EDITSETA LOOKS LOOKNO TLOOKS)             (* ; 
+         (\EDITSETA LOOKS LOOKNO CLOOKS)                     (* ; 
                                                            "Save the new looks for selection/display")
-                 (\RPLPTR CHLIST 0 LMLooksChange)            (* ; 
-                                        "Put a marker in the character list to denote a looks change")
-                 (\RPLPTR WLIST 0 0)                         (* ; "Font changes have no width")
-                 (add TLEN 1)
-                 (SETQ CHLIST (\ADDBASE CHLIST 2))
-                 (SETQ WLIST (\ADDBASE WLIST 2))             (* ; 
+         (\RPLPTR CHLIST 0 LMLooksChange)                    (* ; 
+                            "Put a marker in the character list to denote a looks change of no width")
+         (\RPLPTR WLIST 0 0)
+         (add TLEN 1)                                        (* ; 
                                                          "Account for the dummy marker/looks in TLEN")
-                 (CL:WHEN (ffetch (CHARLOOKS CLPROTECTED) of TLOOKS)
-                                                             (* ; 
-                          "If this line contains protected text, mark the linedescriptor accordingly")
-                     (freplace (LINEDESCRIPTOR LHASPROT) of LINE with T))
-                 (SETQ NEWPC ORIGPC))
-                [(AND ORIGPC (PREVPIECE ORIGPC)
-                      (EQ OBJECT.PTYPE (PTYPE ORIGPC)))
-
-                 (* ;; "After passing over an image object, always update the ascent and descent.  This avoids losing that info if an image object is first on the line;  we used to forget the starting font's data, which left following characters at the mercy of the imageobj.")
-
-                 [SETQ NEWASCENT (IMAX ASCENT (IPLUS (FONTPROP FONT 'ASCENT)
-                                                     (OR (ffetch (CHARLOOKS CLOFFSET) of TLOOKS)
-                                                         0]
-                 (SETQ NEWDESCENT (IMAX DESCENT (IDIFFERENCE (FONTPROP FONT 'DESCENT)
-                                                       (OR (ffetch (CHARLOOKS CLOFFSET) of TLOOKS)
-                                                           0]
-                ((NOT ORIGPC)
-
-                 (* ;; "No more pieces in this document (we ran off the end skipping invisible text!) .  Tells \FORMATLINE to stop.")
-
-                 (RETFROM (FUNCTION \TEXTBIN)
-                        NIL)))
-             NEWPC))])
+         (SETQ CHLIST (\ADDBASE CHLIST 2))
+         (SETQ WLIST (\ADDBASE WLIST 2))
+         (CL:WHEN (ffetch (CHARLOOKS CLPROTECTED) of CLOOKS) (* ; 
+                                                         "Mark the line as containing protected text")
+             (freplace (LINEDESCRIPTOR LHASPROT) of LINE with T))
+         PC])
 
 (\TEDIT.PARSE.CHARLOOKS.LIST
   [LAMBDA (NLOOKS OLOOKS TEXTOBJ)                            (* ; "Edited 30-May-91 21:46 by jds")
@@ -2654,25 +2579,25 @@ CONS pair of default width and LIST of TAB record instances")
 
 (RPAQ? *TEDIT-STYLESHEET-SAVE-LIST* )
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (24761 70402 (CHARLOOKS.FROM.FONT 24771 . 26276) (EQCLOOKS 26278 . 28693) (SAMECLOOKS 
-28695 . 32539) (\TEDIT.UNIQUIFY.CHARLOOKS 32541 . 33096) (TEDIT.CARETLOOKS 33098 . 34732) (
-TEDIT.COPY.LOOKS 34734 . 36736) (\TEDIT.GET.CHARLOOKS 36738 . 39798) (\TEDIT.UNPARSE.CHARLOOKS.LIST 
-39800 . 42525) (TEDIT.MODIFYLOOKS 42527 . 44347) (TEDIT.NEW.FONT 44349 . 44769) (\TEDIT.PUT.CHARLOOKS 
-44771 . 46484) (\TEDIT.CARETLOOKS.VERIFY 46486 . 47561) (\TEDIT.GET.INSERT.CHARLOOKS 47563 . 49952) (
-\TEDIT.GET.TERMSA.WIDTHS 49954 . 50370) (\TEDIT.LOOKS.UPDATE 50372 . 59757) (
-\TEDIT.PARSE.CHARLOOKS.LIST 59759 . 67806) (\TEDIT.FLUSH.UNUSED.LOOKS 67808 . 70400)) (70450 72887 (
-TEDIT.SUBLOOKS 70460 . 72885)) (72888 95182 (\TEDIT.CHANGE.LOOKS 72898 . 85816) (TEDIT.LOOKS 85818 . 
-87732) (\TEDIT.LOOKS 87734 . 90916) (\TEDIT.FONTCOPY 90918 . 92284) (TEDIT.GET.LOOKS 92286 . 95180)) (
-95225 148812 (\TEDIT.GET.PARALOOKS 95235 . 95719) (EQFMTSPEC 95721 . 99222) (\TEDIT.UNIQUIFY.PARALOOKS
- 99224 . 99789) (TEDIT.GET.PARALOOKS 99791 . 101187) (\TEDIT.UNPARSE.PARALOOKS.LIST 101189 . 104380) (
-\TEDIT.PARSE.PARALOOKS.LIST 104382 . 112043) (TEDIT.PARALOOKS 112045 . 134411) (TEDIT.COPY.PARALOOKS 
-134413 . 136525) (\TEDIT.PUT.PARALOOKS 136527 . 137425) (\TEDIT.CONVERT.TO.FORMATTED 137427 . 139237) 
-(\TEDIT.PARABOUNDS 139239 . 141721) (\TEDIT.FORMATTABS 141723 . 148810)) (148872 154810 (
-TEDIT.SUBPARALOOKS 148882 . 151411) (SAMEPARALOOKS 151413 . 154808)) (154853 160383 (TEDIT.REDO.LOOKS 
-154863 . 155644) (TEDIT.REDO.PARALOOKS 155646 . 156404) (TEDIT.UNDO.LOOKS 156406 . 158673) (
-TEDIT.UNDO.PARALOOKS 158675 . 160381)) (160422 160960 (\TEDIT.MARK.REVISION 160432 . 160958)) (161022 
-161691 (\CREATE.TEDIT.DEFAULT.FMTSPEC 161032 . 161313) (\CREATE.TEDIT.FACE.MENU 161315 . 161487) (
-\CREATE.TEDIT.SIZE.MENU 161489 . 161689)) (161728 170128 (\TEDIT.APPLY.STYLES 161738 . 165104) (
-\TEDIT.APPLY.PARASTYLES 165106 . 167002) (TEDIT.STYLESHEET 167004 . 168071) (TEDIT.POP.STYLESHEET 
-168073 . 168741) (TEDIT.PUSH.STYLESHEET 168743 . 169483) (TEDIT.ADD.STYLESHEET 169485 . 170126)))))
+  (FILEMAP (NIL (24764 65398 (CHARLOOKS.FROM.FONT 24774 . 26279) (EQCLOOKS 26281 . 28696) (SAMECLOOKS 
+28698 . 32542) (\TEDIT.UNIQUIFY.CHARLOOKS 32544 . 33099) (TEDIT.CARETLOOKS 33101 . 34735) (
+TEDIT.COPY.LOOKS 34737 . 36739) (\TEDIT.GET.CHARLOOKS 36741 . 39801) (\TEDIT.UNPARSE.CHARLOOKS.LIST 
+39803 . 42528) (TEDIT.MODIFYLOOKS 42530 . 44350) (TEDIT.NEW.FONT 44352 . 44772) (\TEDIT.PUT.CHARLOOKS 
+44774 . 46487) (\TEDIT.CARETLOOKS.VERIFY 46489 . 47564) (\TEDIT.GET.INSERT.CHARLOOKS 47566 . 49955) (
+\TEDIT.GET.TERMSA.WIDTHS 49957 . 50373) (\TEDIT.LOOKS.UPDATE 50375 . 54753) (
+\TEDIT.PARSE.CHARLOOKS.LIST 54755 . 62802) (\TEDIT.FLUSH.UNUSED.LOOKS 62804 . 65396)) (65446 67883 (
+TEDIT.SUBLOOKS 65456 . 67881)) (67884 90178 (\TEDIT.CHANGE.LOOKS 67894 . 80812) (TEDIT.LOOKS 80814 . 
+82728) (\TEDIT.LOOKS 82730 . 85912) (\TEDIT.FONTCOPY 85914 . 87280) (TEDIT.GET.LOOKS 87282 . 90176)) (
+90221 143808 (\TEDIT.GET.PARALOOKS 90231 . 90715) (EQFMTSPEC 90717 . 94218) (\TEDIT.UNIQUIFY.PARALOOKS
+ 94220 . 94785) (TEDIT.GET.PARALOOKS 94787 . 96183) (\TEDIT.UNPARSE.PARALOOKS.LIST 96185 . 99376) (
+\TEDIT.PARSE.PARALOOKS.LIST 99378 . 107039) (TEDIT.PARALOOKS 107041 . 129407) (TEDIT.COPY.PARALOOKS 
+129409 . 131521) (\TEDIT.PUT.PARALOOKS 131523 . 132421) (\TEDIT.CONVERT.TO.FORMATTED 132423 . 134233) 
+(\TEDIT.PARABOUNDS 134235 . 136717) (\TEDIT.FORMATTABS 136719 . 143806)) (143868 149806 (
+TEDIT.SUBPARALOOKS 143878 . 146407) (SAMEPARALOOKS 146409 . 149804)) (149849 155379 (TEDIT.REDO.LOOKS 
+149859 . 150640) (TEDIT.REDO.PARALOOKS 150642 . 151400) (TEDIT.UNDO.LOOKS 151402 . 153669) (
+TEDIT.UNDO.PARALOOKS 153671 . 155377)) (155418 155956 (\TEDIT.MARK.REVISION 155428 . 155954)) (156018 
+156687 (\CREATE.TEDIT.DEFAULT.FMTSPEC 156028 . 156309) (\CREATE.TEDIT.FACE.MENU 156311 . 156483) (
+\CREATE.TEDIT.SIZE.MENU 156485 . 156685)) (156724 165124 (\TEDIT.APPLY.STYLES 156734 . 160100) (
+\TEDIT.APPLY.PARASTYLES 160102 . 161998) (TEDIT.STYLESHEET 162000 . 163067) (TEDIT.POP.STYLESHEET 
+163069 . 163737) (TEDIT.PUSH.STYLESHEET 163739 . 164479) (TEDIT.ADD.STYLESHEET 164481 . 165122)))))
 STOP

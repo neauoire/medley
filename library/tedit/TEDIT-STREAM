@@ -1,12 +1,14 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED "13-Sep-2022 12:10:07" 
-{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-STREAM.;291 153215 
+(FILECREATED "15-Sep-2022 19:54:42" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-STREAM.;293 153763 
 
-      :CHANGES-TO (VARS TEDIT-STREAMCOMS)
+      :CHANGES-TO (FNS \INSTALL.PIECE)
+                  (VARS TEDIT-STREAMCOMS)
+                  (MACROS PPARALOOKS)
 
-      :PREVIOUS-DATE "11-Sep-2022 16:27:15" 
-{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-STREAM.;289)
+      :PREVIOUS-DATE "13-Sep-2022 12:10:07" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-STREAM.;291)
 
 
 (PRETTYCOMPRINT TEDIT-STREAMCOMS)
@@ -14,7 +16,7 @@
 (RPAQQ TEDIT-STREAMCOMS
        [(DECLARE%: EVAL@COMPILE DONTCOPY (EXPORT (RECORDS PIECE TEXTOBJ TEXTIMAGEDATA TEXTSTREAM)
                                                 (MACROS NEXTPIECE PREVPIECE PLEN PTYPE PCONTENTS 
-                                                       PLOOKS)
+                                                       PLOOKS PPARALOOKS)
                                                 (OPTIMIZERS TEXTPROP)
                                                 (CONSTANTS (THINFILE.PTYPE 0)
                                                        (FATFILE1.PTYPE 1)
@@ -439,6 +441,9 @@
 
 (PUTPROPS PLOOKS MACRO ((PC)
                         (ffetch (PIECE PLOOKS) of PC)))
+
+(PUTPROPS PPARALOOKS MACRO ((PC)
+                            (ffetch (PIECE PPARALOOKS) of PC)))
 )
 
 (DEFOPTIMIZER TEXTPROP (TEXTOBJ PROP &OPTIONAL (VAL NIL WRITING))
@@ -2289,95 +2294,104 @@
              NEWPC))])
 
 (\INSTALL.PIECE
-  [LAMBDA (TSTREAM PC CHOFFSET)                              (* ; "Edited 11-Sep-2022 14:40 by rmk")
+  [LAMBDA (TSTREAM PC CHOFFSET)                              (* ; "Edited 15-Sep-2022 19:54 by rmk")
+                                                             (* ; "Edited 11-Sep-2022 14:40 by rmk")
                                                              (* ; "Edited  8-Sep-2022 20:46 by rmk")
 
     (* ;; "Makes PC be the current piece in TSTREAM. set up so that the next character is at CHOFFSET relative to the start of the piece. ")
 
-    (* ;; "SHOULD PARTS BE UNINTERRUPTABLE?")
+    (* ;; "Invisible pieces may be encountered in moving from piece to piece.  This function does not deal with that possibility.  It assumes that advancing over invisible pieces has been done, by \NEXT.VISIBLE.PIECE in \TEXTBIN or as a preamble in the line-formatting functions..")
 
-    (CL:UNLESS CHOFFSET                                      (* ; 
-                                                         "Starting character offset within the piece")
-        (SETQ CHOFFSET 0))
+    (* ;; "However: if the formatting functions require maintaining the correlation of character numbers and pieces, they may need to be told that characters in invisible pieces have been skipped.  ")
+
+    (* ;; "Note that, since we are setting up the TSTREAM looks here, the LOOKSUPDATEFN's don't need to do that part.")
+
+    (* ;; "SHOULD PARTS OF THIS BE UNINTERRUPTABLE? ")
+
     (CL:WHEN PC
-        (LET (PCONTENTS NPC PLEN CHARSLEFT (OPC (fetch (TEXTSTREAM PIECE) of TSTREAM))
+        (CL:UNLESS CHOFFSET                                  (* ; 
+                                                         "Starting character offset within the piece")
+            (SETQ CHOFFSET 0))
+        (LET (PCONTENTS PLEN CHARSLEFT LOOKSCHANGED (TPC (fetch (TEXTSTREAM PIECE) of TSTREAM))
                     (LOOKSUPDATEFN (ffetch (TEXTSTREAM LOOKSUPDATEFN) of TSTREAM)))
-             (CL:WHEN OPC
+             (CL:UNLESS (AND TPC (EQ (PLOOKS PC)
+                                     (PLOOKS TPC)))
+                 (freplace (TEXTSTREAM CURRENTLOOKS) of TSTREAM with (\TEDIT.APPLY.STYLES
+                                                                      (PLOOKS PC)
+                                                                      PC TEXTOBJ))
+                 (SETQ LOOKSCHANGED T))
 
-                 (* ;; "Make sure that PC's looks are installed in TSTREAM. If PC has the same looks as the previous one (OPC), nothing to do.")
+             (* ;; "Make sure that PC's looks are installed in TSTREAM. If PC has the same looks as the previous one (TPC), nothing to do.")
 
-                 (CL:WHEN (OR (NULL (fetch (PIECE PPARALOOKS) of OPC))
-                              (EQ (fetch (PIECE PPARALOOKS) of OPC)
-                                  (fetch (PIECE PPARALOOKS) of PC)))
-                     (freplace (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM
-                        with (\TEDIT.APPLY.PARASTYLES (ffetch (PIECE PPARALOOKS) of PC)
-                                    PC
-                                    (ffetch (TEXTSTREAM TEXTOBJ) of TSTREAM))))
-                 (CL:WHEN (OR (NULL (ffetch (PIECE PLOOKS) of OPC))
-                              (EQCLOOKS (PLOOKS PC)
-                                     (PLOOKS OPC)))
-                     (freplace (TEXTSTREAM CURRENTLOOKS) of TSTREAM with (\TEDIT.APPLY.STYLES
-                                                                          (PLOOKS PC)
+             (CL:UNLESS (AND TPC (EQ (PPARALOOKS TPC)
+                                     (PPARALOOKS PC)))
+                 (freplace (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM with (\TEDIT.APPLY.PARASTYLES
+                                                                          (PPARALOOKS PC)
                                                                           PC
                                                                           (ffetch (TEXTSTREAM TEXTOBJ
                                                                                          )
-                                                                             of TSTREAM)))))
+                                                                             of TSTREAM)))
+                 (SETQ LOOKSCHANGED T))
+             (freplace (TEXTSTREAM PIECE) of TSTREAM with PC)
 
-             (* ;; "The LOOKSUPDATEFN is non-NIL only for calls from \FORMATLINE and \TEDIT.HARDCOPY.FORMATLINE  It updates their formatting variables  (descent etc) when a piece changes under their \BINs.  It advances beyond PC to NPC if PC is a run of invisible characters.")
+             (* ;; "At this point the text stream and the PC are consistent, and the text stream has the (style-expanded ) looks of PC.")
 
-             (CL:WHEN (AND LOOKSUPDATEFN (SETQ NPC (APPLY* LOOKSUPDATEFN TSTREAM PC)))
-                    (SETQ PC NPC))
-             (CL:WHEN PC                                     (* ; 
-                                                      "Test again, LOOSKUPDATEFN might have nuked it")
-                 (SETQ PLEN (PLEN PC))
-                 (SETQ CHARSLEFT (IDIFFERENCE PLEN CHOFFSET))
-                 (freplace (TEXTSTREAM PIECE) of TSTREAM with PC)
-                                                             (* ; "Initial values")
-                 (freplace (STREAM BINABLE) of TSTREAM with NIL)
-                                                             (* ; "Other than 1-byte characters")
-                 (freplace (STREAM COFFSET) of TSTREAM with 0)
-                 (SELECTC (PTYPE PC)
-                     (THINFILE.PTYPE                         (* ; "Sets up the buffers")
-                          (freplace (STREAM BINABLE) of TSTREAM with T)
-                          (\INSTALL.FILEBUFFER TSTREAM CHARSLEFT))
-                     ((LIST FATFILE1.PTYPE FATFILE2.PTYPE) 
-                          (\INSTALL.FILEBUFFER TSTREAM CHARSLEFT))
-                     (STRING.PTYPES (SETQ PCONTENTS (PCONTENTS PC))
-                                    (freplace (STREAM CPPTR) of TSTREAM with (ffetch (STRINGP BASE)
-                                                                                of PCONTENTS))
-                                    (freplace (STREAM COFFSET) of TSTREAM
-                                       with (IPLUS (ffetch (STRINGP OFFST) of PCONTENTS)
-                                                   CHOFFSET))
-                                    (freplace (STREAM CBUFSIZE) of TSTREAM
-                                       with (IPLUS (ffetch (STRINGP OFFST) of PCONTENTS)
-                                                   PLEN))
+             (* ;; "The LOOKSUPDATEFN is non-NIL only for calls from \FORMATLINE and \TEDIT.HARDCOPY.FORMATLINE.  It updates their formatting variables.  ")
 
-                                    (* ;; 
+             (CL:WHEN (AND LOOKSCHANGED LOOKSUPDATEFN)
+                    (APPLY* LOOKSUPDATEFN TSTREAM PC LOOKSCHANGED))
+
+             (* ;; "")
+
+             (* ;; "Now set up for binning.")
+
+             (SETQ PLEN (PLEN PC))
+             (SETQ CHARSLEFT (IDIFFERENCE PLEN CHOFFSET))
+             (freplace (TEXTSTREAM PIECE) of TSTREAM with PC)(* ; "Initial values")
+             (freplace (STREAM BINABLE) of TSTREAM with NIL) (* ; "Other than 1-byte characters")
+             (freplace (STREAM COFFSET) of TSTREAM with 0)
+             (SELECTC (PTYPE PC)
+                 (THINFILE.PTYPE                             (* ; "Sets up the buffers")
+                      (freplace (STREAM BINABLE) of TSTREAM with T)
+                      (\INSTALL.FILEBUFFER TSTREAM CHARSLEFT))
+                 ((LIST FATFILE1.PTYPE FATFILE2.PTYPE) 
+                      (\INSTALL.FILEBUFFER TSTREAM CHARSLEFT))
+                 (STRING.PTYPES (SETQ PCONTENTS (PCONTENTS PC))
+                                (freplace (STREAM CPPTR) of TSTREAM with (ffetch (STRINGP BASE)
+                                                                            of PCONTENTS))
+                                (freplace (STREAM COFFSET) of TSTREAM
+                                   with (IPLUS (ffetch (STRINGP OFFST) of PCONTENTS)
+                                               CHOFFSET))
+                                (freplace (STREAM CBUFSIZE) of TSTREAM
+                                   with (IPLUS (ffetch (STRINGP OFFST) of PCONTENTS)
+                                               PLEN))
+
+                                (* ;; 
                              "The fatness of the string may have changed by the RPL--- in \INSERTCH.")
 
-                                    (if (ffetch (STRINGP FATSTRINGP) of PCONTENTS)
-                                        then (freplace (PIECE PTYPE) of PC with FATSTRING.PTYPE)
-                                             (freplace (PIECE PBINABLE) of PC with NIL)
-                                      else (freplace (STREAM BINABLE) of TSTREAM with T)))
-                     (OBJECT.PTYPE (freplace (STREAM CBUFSIZE) of TSTREAM with 1))
-                     (SUBSTREAM.PTYPE                        (* ; 
+                                (if (ffetch (STRINGP FATSTRINGP) of PCONTENTS)
+                                    then (freplace (PIECE PTYPE) of PC with FATSTRING.PTYPE)
+                                         (freplace (PIECE PBINABLE) of PC with NIL)
+                                  else (freplace (STREAM BINABLE) of TSTREAM with T)))
+                 (OBJECT.PTYPE (freplace (STREAM CBUFSIZE) of TSTREAM with 1))
+                 (SUBSTREAM.PTYPE                            (* ; 
     "Maybe just set PC to the piece of the (freplace (STREAM BINABLE) of TSTREAM with NIL)substream?")
-                          (CL:UNLESS LOOKSUPDATEFN
-                              (freplace (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM
-                                 with (ffetch (TEXTSTREAM CURRENTPARALOOKS) of (PCONTENTS PC)))
-                              (freplace (TEXTSTREAM CURRENTLOOKS) of TSTREAM
-                                 with (ffetch (TEXTSTREAM CURRENTLOOKS) of (PCONTENTS PC)))))
-                     (FATBLOCK.PTYPE 
-                          (SETQ PCONTENTS (PCONTENTS PC))
-                          (freplace (STREAM CPPTR) of TSTREAM with PCONTENTS)
-                          (freplace (STREAM COFFSET) of TSTREAM with (ffetch (PIECE PFPOS)
-                                                                        of PC))
-                          (freplace (STREAM CBUFSIZE) of TSTREAM with PLEN))
-                     NIL)
-                 (freplace (TEXTSTREAM STARTINGCOFFSET) of TSTREAM with (ffetch (STREAM COFFSET)
-                                                                           of TSTREAM))
-                 (freplace (TEXTSTREAM PCCHARSLEFT) of TSTREAM with CHARSLEFT)
-                 PC)))])
+                      (CL:UNLESS LOOKSUPDATEFN
+                          (freplace (TEXTSTREAM CURRENTPARALOOKS) of TSTREAM
+                             with (ffetch (TEXTSTREAM CURRENTPARALOOKS) of (PCONTENTS PC)))
+                          (freplace (TEXTSTREAM CURRENTLOOKS) of TSTREAM with (ffetch (TEXTSTREAM
+                                                                                       CURRENTLOOKS)
+                                                                                 of (PCONTENTS PC)))))
+                 (FATBLOCK.PTYPE 
+                      (SETQ PCONTENTS (PCONTENTS PC))
+                      (freplace (STREAM CPPTR) of TSTREAM with PCONTENTS)
+                      (freplace (STREAM COFFSET) of TSTREAM with (ffetch (PIECE PFPOS) of PC))
+                      (freplace (STREAM CBUFSIZE) of TSTREAM with PLEN))
+                 NIL)
+             (freplace (TEXTSTREAM STARTINGCOFFSET) of TSTREAM with (ffetch (STREAM COFFSET)
+                                                                       of TSTREAM))
+             (freplace (TEXTSTREAM PCCHARSLEFT) of TSTREAM with CHARSLEFT)
+             PC))])
 )
 (DECLARE%: EVAL@COMPILE DONTCOPY 
 (DECLARE%: EVAL@COMPILE 
@@ -2534,23 +2548,23 @@
 (ADDTOVAR LAMA TEXTPROP)
 )
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (36130 57184 (\TEXTBIN 36140 . 42824) (\TEXTBIN.NEXT.PIECE 42826 . 43361) (\TEXTPEEKBIN 
-43363 . 47481) (\TEXTBACKFILEPTR 47483 . 51597) (\TEXTOUTCHARFN 51599 . 51890) (\INSTALL.FILEBUFFER 
-51892 . 55583) (\TEXTBOUT 55585 . 57182)) (61108 66111 (\TEXTSTREAM.OUTCHARFN 61118 . 62762) (
-\TEXTSTREAM.INCCCODEFN 62764 . 63447) (\TEXTSTREAM.PEEKCCODEFN 63449 . 63734) (\TEXTSTREAM.BACKCCODEFN
- 63736 . 64214) (\TEXTSTREAM.OUTCHARFN 64216 . 65860) (\TEXTSTREAM.FORMATBYTESTREAM 65862 . 66109)) (
-66158 97185 (COPYTEXTSTREAM 66168 . 69015) (OPENTEXTSTREAM 69017 . 83270) (REOPENTEXTSTREAM 83272 . 
-83698) (TEDIT.STREAMCHANGEDP 83700 . 84002) (TEXTSTREAMP 84004 . 84418) (TXTFILE 84420 . 84873) (
-\TEDIT.REOPEN.STREAM 84875 . 86937) (\TEDIT.COPYTEXTSTREAM.PIECEMAPFN 86939 . 89296) (\TEXTINIT 89298
- . 95218) (\TEXTMARK 95220 . 95972) (\TEXTTTYBOUT 95974 . 97183)) (97239 109353 (\TEXTCLOSEF 97249 . 
-98617) (\TEXTDSPFONT 98619 . 99701) (\TEXTEOFP 99703 . 100952) (\TEXTGETEOFPTR 100954 . 101168) (
-\TEXTGETFILEPTR 101170 . 103341) (\TEXTOPENF 103343 . 104169) (\TEXTSETEOF 104171 . 104686) (
-\TEXTSETFILEPTR 104688 . 106302) (\TEXTDSPXPOSITION 106304 . 107164) (\TEXTDSPYPOSITION 107166 . 
-107713) (\TEXTLEFTMARGIN 107715 . 108137) (\TEXTRIGHTMARGIN 108139 . 108887) (\TEXTDSPCHARWIDTH 108889
- . 109066) (\TEXTDSPSTRINGWIDTH 109068 . 109247) (\TEXTDSPLINEFEED 109249 . 109351)) (110717 130043 (
-\DELETECH 110727 . 112922) (\SETUPGETCH 112924 . 114188) (\INSERTCH 114190 . 124976) (\INSERTCR 124978
- . 126453) (\INSERTCH.INSERTION 126455 . 129133) (\INSERTCH.EXTEND 129135 . 130041)) (130095 146283 (
-\DELETEPIECES 130105 . 131877) (\INSERTPIECE 131879 . 134607) (\SPLITPIECE 134609 . 139590) (
-\INSTALL.PIECE 139592 . 146281)) (147466 152686 (CGETTEXTPROP 147476 . 147936) (CTEXTPROP 147938 . 
-150286) (GETTEXTPROP 150288 . 150887) (PUTTEXTPROP 150889 . 152220) (TEXTPROP 152222 . 152684)))))
+  (FILEMAP (NIL (36332 57386 (\TEXTBIN 36342 . 43026) (\TEXTBIN.NEXT.PIECE 43028 . 43563) (\TEXTPEEKBIN 
+43565 . 47683) (\TEXTBACKFILEPTR 47685 . 51799) (\TEXTOUTCHARFN 51801 . 52092) (\INSTALL.FILEBUFFER 
+52094 . 55785) (\TEXTBOUT 55787 . 57384)) (61310 66313 (\TEXTSTREAM.OUTCHARFN 61320 . 62964) (
+\TEXTSTREAM.INCCCODEFN 62966 . 63649) (\TEXTSTREAM.PEEKCCODEFN 63651 . 63936) (\TEXTSTREAM.BACKCCODEFN
+ 63938 . 64416) (\TEXTSTREAM.OUTCHARFN 64418 . 66062) (\TEXTSTREAM.FORMATBYTESTREAM 66064 . 66311)) (
+66360 97387 (COPYTEXTSTREAM 66370 . 69217) (OPENTEXTSTREAM 69219 . 83472) (REOPENTEXTSTREAM 83474 . 
+83900) (TEDIT.STREAMCHANGEDP 83902 . 84204) (TEXTSTREAMP 84206 . 84620) (TXTFILE 84622 . 85075) (
+\TEDIT.REOPEN.STREAM 85077 . 87139) (\TEDIT.COPYTEXTSTREAM.PIECEMAPFN 87141 . 89498) (\TEXTINIT 89500
+ . 95420) (\TEXTMARK 95422 . 96174) (\TEXTTTYBOUT 96176 . 97385)) (97441 109555 (\TEXTCLOSEF 97451 . 
+98819) (\TEXTDSPFONT 98821 . 99903) (\TEXTEOFP 99905 . 101154) (\TEXTGETEOFPTR 101156 . 101370) (
+\TEXTGETFILEPTR 101372 . 103543) (\TEXTOPENF 103545 . 104371) (\TEXTSETEOF 104373 . 104888) (
+\TEXTSETFILEPTR 104890 . 106504) (\TEXTDSPXPOSITION 106506 . 107366) (\TEXTDSPYPOSITION 107368 . 
+107915) (\TEXTLEFTMARGIN 107917 . 108339) (\TEXTRIGHTMARGIN 108341 . 109089) (\TEXTDSPCHARWIDTH 109091
+ . 109268) (\TEXTDSPSTRINGWIDTH 109270 . 109449) (\TEXTDSPLINEFEED 109451 . 109553)) (110919 130245 (
+\DELETECH 110929 . 113124) (\SETUPGETCH 113126 . 114390) (\INSERTCH 114392 . 125178) (\INSERTCR 125180
+ . 126655) (\INSERTCH.INSERTION 126657 . 129335) (\INSERTCH.EXTEND 129337 . 130243)) (130297 146831 (
+\DELETEPIECES 130307 . 132079) (\INSERTPIECE 132081 . 134809) (\SPLITPIECE 134811 . 139792) (
+\INSTALL.PIECE 139794 . 146829)) (148014 153234 (CGETTEXTPROP 148024 . 148484) (CTEXTPROP 148486 . 
+150834) (GETTEXTPROP 150836 . 151435) (PUTTEXTPROP 151437 . 152768) (TEXTPROP 152770 . 153232)))))
 STOP
