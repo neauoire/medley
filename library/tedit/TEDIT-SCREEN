@@ -1,12 +1,12 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED "13-Sep-2022 12:40:14" 
-{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-SCREEN.;69 200721 
+(FILECREATED "14-Sep-2022 21:48:02" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-SCREEN.;70 200072 
 
-      :CHANGES-TO (VARS TEDIT-SCREENCOMS)
+      :CHANGES-TO (FNS \DISPLAYLINE)
 
-      :PREVIOUS-DATE "11-Sep-2022 16:30:45" 
-{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT-SCREEN.;65)
+      :PREVIOUS-DATE "13-Sep-2022 12:40:14" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-SCREEN.;69)
 
 
 (PRETTYCOMPRINT TEDIT-SCREENCOMS)
@@ -1158,7 +1158,8 @@
 (DEFINEQ
 
 (\DISPLAYLINE
-  [LAMBDA (TEXTOBJ LINE WINDOW)                              (* ; "Edited  9-Sep-2022 22:39 by rmk")
+  [LAMBDA (TEXTOBJ LINE WINDOW)                              (* ; "Edited 14-Sep-2022 21:43 by rmk")
+                                                             (* ; "Edited  9-Sep-2022 22:39 by rmk")
                                                             (* ; "Edited 28-Sep-2021 15:00 by rmk:")
 
     (* ;; "Display the line of text LINE in the edit window where it belongs.")
@@ -1167,223 +1168,217 @@
 
     (\DTEST TEXTOBJ 'TEXTOBJ)
     (\DTEST LINE 'LINEDESCRIPTOR)
-    (LET ((LOOKS (ffetch (THISLINE LOOKS) of (ffetch (TEXTOBJ THISLINE) of TEXTOBJ)))
-          (WINDOWDS (WINDOWPROP (OR WINDOW (CAR (ffetch (TEXTOBJ \WINDOW) of TEXTOBJ)))
-                           'DSP))
-          (THISLINE (\DTEST (ffetch (TEXTOBJ THISLINE) of TEXTOBJ)
-                           'THISLINE))
-          (OLDCACHE (fetch (LINECACHE LCBITMAP) of (ffetch (TEXTOBJ DISPLAYCACHE) of TEXTOBJ)))
-          (DS (ffetch (TEXTOBJ DISPLAYCACHEDS) of TEXTOBJ))
-          (HCPYDS (ffetch (TEXTOBJ DISPLAYHCPYDS) of TEXTOBJ))
-          (HARDCOPYMODE (fetch (FMTSPEC FMTHARDCOPY) of (ffetch (LINEDESCRIPTOR LFMTSPEC)
-                                                           of LINE)))
-          CACHE OFONT OLOOKS XOFFSET CLIPLEFT CLIPRIGHT DISPLAYDATA DDPILOTBBT DDWIDTHCACHE 
-          DDOFFSETCACHE CURY LHEIGHT SCALE)
-         [SETQ LHEIGHT (COND
-                          ((ffetch (LINEDESCRIPTOR PREVLINE) of LINE)
+    (LET
+     ((LOOKS (ffetch (THISLINE LOOKS) of (ffetch (TEXTOBJ THISLINE) of TEXTOBJ)))
+      (WINDOWDS (WINDOWPROP (OR WINDOW (CAR (ffetch (TEXTOBJ \WINDOW) of TEXTOBJ)))
+                       'DSP))
+      (THISLINE (\DTEST (ffetch (TEXTOBJ THISLINE) of TEXTOBJ)
+                       'THISLINE))
+      (OLDCACHE (fetch (LINECACHE LCBITMAP) of (ffetch (TEXTOBJ DISPLAYCACHE) of TEXTOBJ)))
+      (DS (ffetch (TEXTOBJ DISPLAYCACHEDS) of TEXTOBJ))
+      (HCPYDS (ffetch (TEXTOBJ DISPLAYHCPYDS) of TEXTOBJ))
+      (HARDCOPYMODE (fetch (FMTSPEC FMTHARDCOPY) of (ffetch (LINEDESCRIPTOR LFMTSPEC) of LINE)))
+      CACHE OFONT OLOOKS XOFFSET CLIPLEFT CLIPRIGHT DISPLAYDATA DDPILOTBBT DDWIDTHCACHE DDOFFSETCACHE
+      CURY LHEIGHT SCALE)
+     [SETQ LHEIGHT (COND
+                      ((ffetch (LINEDESCRIPTOR PREVLINE) of LINE)
                                                              (* ; 
                                     "So if theres a base-to-base measure, we clear everything right.")
-                           (IMAX (IDIFFERENCE (ffetch (LINEDESCRIPTOR YBOT)
-                                                 of (ffetch (LINEDESCRIPTOR PREVLINE) of LINE))
-                                        (ffetch (LINEDESCRIPTOR YBOT) of LINE))
-                                 (ffetch (LINEDESCRIPTOR LHEIGHT) of LINE)))
-                          (T (ffetch (LINEDESCRIPTOR LHEIGHT) of LINE]
-         (SETQ SCALE (COND
-                        (HARDCOPYMODE                        (* ; 
+                       (IMAX (IDIFFERENCE (ffetch (LINEDESCRIPTOR YBOT) of (ffetch (LINEDESCRIPTOR
+                                                                                    PREVLINE)
+                                                                              of LINE))
+                                    (ffetch (LINEDESCRIPTOR YBOT) of LINE))
+                             (ffetch (LINEDESCRIPTOR LHEIGHT) of LINE)))
+                      (T (ffetch (LINEDESCRIPTOR LHEIGHT) of LINE]
+     (SETQ SCALE (COND
+                    (HARDCOPYMODE                            (* ; 
                                                        "This is a hardcopy-mode line.  Scale things.")
-                               (DSPSCALE NIL HCPYDS))
-                        (T 1)))
-         (SETQ CACHE (\TEDIT.LINECACHE (ffetch (TEXTOBJ DISPLAYCACHE) of TEXTOBJ)
-                            (COND
-                               (HARDCOPYMODE (FIXR (FQUOTIENT (ffetch (LINEDESCRIPTOR RIGHTMARGIN)
-                                                                 of LINE)
-                                                          SCALE)))
-                               (T (ffetch (LINEDESCRIPTOR RIGHTMARGIN) of LINE)))
-                            LHEIGHT))
-         (COND
-            ((NEQ CACHE OLDCACHE)                            (* ; 
+                           (DSPSCALE NIL HCPYDS))
+                    (T 1)))
+     (SETQ CACHE (\TEDIT.LINECACHE (ffetch (TEXTOBJ DISPLAYCACHE) of TEXTOBJ)
+                        (COND
+                           (HARDCOPYMODE (FIXR (FQUOTIENT (ffetch (LINEDESCRIPTOR RIGHTMARGIN)
+                                                             of LINE)
+                                                      SCALE)))
+                           (T (ffetch (LINEDESCRIPTOR RIGHTMARGIN) of LINE)))
+                        LHEIGHT))
+     (COND
+        ((NEQ CACHE OLDCACHE)                                (* ; 
                  "We changed the bitmaps because this line was bigger--update the displaystream, too")
-             (DSPDESTINATION CACHE DS)
-             (DSPCLIPPINGREGION (create REGION
-                                       LEFT _ 0
-                                       BOTTOM _ 0
-                                       WIDTH _ (fetch BITMAPWIDTH of CACHE)
-                                       HEIGHT _ (fetch BITMAPHEIGHT of CACHE))
-                    DS)))
-         (BITBLT NIL 0 0 CACHE 0 0 NIL NIL 'TEXTURE 'REPLACE WHITESHADE)
+         (DSPDESTINATION CACHE DS)
+         (DSPCLIPPINGREGION (create REGION
+                                   LEFT _ 0
+                                   BOTTOM _ 0
+                                   WIDTH _ (fetch BITMAPWIDTH of CACHE)
+                                   HEIGHT _ (fetch BITMAPHEIGHT of CACHE))
+                DS)))
+     (BITBLT NIL 0 0 CACHE 0 0 NIL NIL 'TEXTURE 'REPLACE WHITESHADE)
                                                              (* ; "Clear the line cache")
-         [COND
-            ((AND (NOT (ZEROP (fetch (LINEDESCRIPTOR CHAR1) of LINE)))
-                  (ILEQ (ffetch (LINEDESCRIPTOR CHAR1) of LINE)
-                        (ffetch (TEXTOBJ TEXTLEN) of TEXTOBJ))
-                  (IGEQ (ffetch (LINEDESCRIPTOR YBOT) of LINE)
-                        (ffetch (TEXTOBJ WBOTTOM) of TEXTOBJ)))
+     [COND
+        ((AND (NOT (ZEROP (fetch (LINEDESCRIPTOR CHAR1) of LINE)))
+              (ILEQ (ffetch (LINEDESCRIPTOR CHAR1) of LINE)
+                    (ffetch (TEXTOBJ TEXTLEN) of TEXTOBJ))
+              (IGEQ (ffetch (LINEDESCRIPTOR YBOT) of LINE)
+                    (ffetch (TEXTOBJ WBOTTOM) of TEXTOBJ)))
 
-             (* ;; "Only display the line if it contains text (CHAR1 > 0), appears before the end of the text, and is on-screen.")
+         (* ;; "Only display the line if it contains text (CHAR1 > 0), appears before the end of the text, and is on-screen.")
 
-             (CL:WHEN (EQ (fetch (THISLINE DESC) of THISLINE)
-                          LINE)                              (* ; 
+         (CL:UNLESS (EQ (fetch (THISLINE DESC) of THISLINE)
+                        LINE)                                (* ; 
                                                             "No image cache -- re-format and display")
-                 (\FORMATLINE TEXTOBJ NIL (ffetch (LINEDESCRIPTOR CHAR1) of LINE)
-                        LINE))
-             (MOVETO (ffetch (LINEDESCRIPTOR LEFTMARGIN) of LINE)
-                    (ffetch (LINEDESCRIPTOR DESCENT) of LINE)
-                    DS)
-             (SETQ DISPLAYDATA (fetch (STREAM IMAGEDATA) of DS))
-             (SETQ DDPILOTBBT (ffetch DDPILOTBBT of DISPLAYDATA))
-             (SETQ XOFFSET (fetch DDXOFFSET of DISPLAYDATA))
+             (\FORMATLINE TEXTOBJ NIL (ffetch (LINEDESCRIPTOR CHAR1) of LINE)
+                    LINE))
+         (MOVETO (ffetch (LINEDESCRIPTOR LEFTMARGIN) of LINE)
+                (ffetch (LINEDESCRIPTOR DESCENT) of LINE)
+                DS)
+         (SETQ DISPLAYDATA (fetch (STREAM IMAGEDATA) of DS))
+         (SETQ DDPILOTBBT (ffetch DDPILOTBBT of DISPLAYDATA))
+         (SETQ XOFFSET (fetch DDXOFFSET of DISPLAYDATA))
 
-             (* ;; "The X position of the left edge of the window, since \TEDIT.BLTCHAR works on the screen bitmap itself.")
+         (* ;; "The X position of the left edge of the window, since \TEDIT.BLTCHAR works on the screen bitmap itself.")
 
-             (SETQ CLIPLEFT (fetch DDClippingLeft of DISPLAYDATA))
+         (SETQ CLIPLEFT (fetch DDClippingLeft of DISPLAYDATA))
                                                              (* ; 
                        "The left and right edges of the clipping region for the text display window.")
-             (SETQ CLIPRIGHT (fetch DDClippingRight of DISPLAYDATA))
-             (SETQ OFONT (DSPFONT (fetch CLFONT of (SETQ OLOOKS (\EDITELT LOOKS 0)))
-                                DS))                         (* ; "The starting font")
-             (SETQ DDWIDTHCACHE (ffetch DDWIDTHSCACHE of DISPLAYDATA))
+         (SETQ CLIPRIGHT (fetch DDClippingRight of DISPLAYDATA))
+         (SETQ OFONT (DSPFONT (fetch CLFONT of (SETQ OLOOKS (\EDITELT LOOKS 0)))
+                            DS))                             (* ; "The starting font")
+         (SETQ DDWIDTHCACHE (ffetch DDWIDTHSCACHE of DISPLAYDATA))
                                                              (* ; "Cache the character-image widths")
-             (SETQ DDOFFSETCACHE (ffetch DDOFFSETSCACHE of DISPLAYDATA))
+         (SETQ DDOFFSETCACHE (ffetch DDOFFSETSCACHE of DISPLAYDATA))
                                                              (* ; 
                                                             "And the offset-into-strike-bitmap array")
                                                              (* ; 
                                         "LOOKSTARTX: Starting X position for the current-looks text.")
-             (CL:WHEN (fetch CLOFFSET of OLOOKS)
-                 (RELMOVETO 0 (FIXR (FTIMES SCALE (fetch CLOFFSET of OLOOKS)))
-                        DS))                                 (* ; 
+         (CL:WHEN (fetch CLOFFSET of OLOOKS)
+             (RELMOVETO 0 (FIXR (FTIMES SCALE (fetch CLOFFSET of OLOOKS)))
+                    DS))                                     (* ; 
                                                         "Any sub- or superscripting at start of line")
-             (bind (LOOKNO _ 1)
-                   DX CH (CHLIST _ (fetch (THISLINE CHARS) of (ffetch (TEXTOBJ THISLINE) of TEXTOBJ))
-                                )
-                   (WLIST _ (fetch (THISLINE WIDTHS) of (ffetch (TEXTOBJ THISLINE) of TEXTOBJ)))
-                   (TX _ (IPLUS XOFFSET (ffetch (LINEDESCRIPTOR LEFTMARGIN) of LINE)))
-                   (TERMSA _ (ffetch (TEXTOBJ TXTTERMSA) of TEXTOBJ))
-                   (LOOKSTARTX _ (ffetch (LINEDESCRIPTOR LEFTMARGIN) of LINE)) for I from 0
-                to (ffetch (THISLINE LEN) of THISLINE)
-                do 
-                   (* ;; "Display the line character by character")
+         (bind (LOOKNO _ 1)
+               DX CH (CHLIST _ (fetch (THISLINE CHARS) of (ffetch (TEXTOBJ THISLINE) of TEXTOBJ)))
+               (WLIST _ (fetch (THISLINE WIDTHS) of (ffetch (TEXTOBJ THISLINE) of TEXTOBJ)))
+               (TX _ (IPLUS XOFFSET (ffetch (LINEDESCRIPTOR LEFTMARGIN) of LINE)))
+               (TERMSA _ (ffetch (TEXTOBJ TXTTERMSA) of TEXTOBJ))
+               (LOOKSTARTX _ (ffetch (LINEDESCRIPTOR LEFTMARGIN) of LINE)) for I from 0
+            to (ffetch (THISLINE LEN) of THISLINE)
+            do 
+               (* ;; "Display the line character by character")
 
-                   (SETQ CH (\EDITELT CHLIST I))             (* ; 
+               (SETQ CH (\EDITELT CHLIST I))                 (* ; 
                                                         "Grab the character (or IMAGEOBJ) to display")
-                   (SETQ DX (\EDITELT WLIST I))              (* ; "And its width")
-                   [SELECTC CH
-                       (LMInvisibleRun                       (* ; 
+               (SETQ DX (\EDITELT WLIST I))                  (* ; "And its width")
+               [SELECTC CH
+                   (LMInvisibleRun                           (* ; 
                                           "An INVISIBLE run -- skip it, and skip over the char count")
-                            (add LOOKNO 1))
-                       (LMLooksChange                        (* ; "A LOOKS change")
-                                      (replace DDXPOSITION of DISPLAYDATA with (IDIFFERENCE TX 
-                                                                                      XOFFSET))
+                        (add LOOKNO 1))
+                   (LMLooksChange                            (* ; "A LOOKS change")
+                                  (replace DDXPOSITION of DISPLAYDATA with (IDIFFERENCE TX XOFFSET))
                                                              (* ; 
                                               "Make the displaystream reflect our current X position")
-                                      (TEDIT.MODIFYLOOKS LINE LOOKSTARTX DS OLOOKS
-                                             (ffetch (LINEDESCRIPTOR DESCENT) of LINE))
+                                  (TEDIT.MODIFYLOOKS LINE LOOKSTARTX DS OLOOKS (ffetch (
+                                                                                       LINEDESCRIPTOR
+                                                                                        DESCENT)
+                                                                                  of LINE))
                                                              (* ; 
                   "Make any necessary changes to the preceding characters (underline, strike-out &c)")
-                                      (DSPFONT (fetch CLFONT of (SETQ OLOOKS (\EDITELT LOOKS LOOKNO))
-                                                      )
-                                             DS)             (* ; "Set the new font")
-                                      (add LOOKNO 1)         (* ; "Grab the next set of char looks")
-                                      (AND (fetch CLOFFSET of OLOOKS)
-                                           (RELMOVETO 0 (fetch CLOFFSET of OLOOKS)
-                                                  DS))       (* ; "Account for super/subscripting")
-                                      (SETQ LOOKSTARTX (IDIFFERENCE TX XOFFSET))
+                                  (DSPFONT (fetch CLFONT of (SETQ OLOOKS (\EDITELT LOOKS LOOKNO)))
+                                         DS)                 (* ; "Set the new font")
+                                  (add LOOKNO 1)             (* ; "Grab the next set of char looks")
+                                  (CL:WHEN (fetch CLOFFSET of OLOOKS)
+                                      (RELMOVETO 0 (fetch CLOFFSET of OLOOKS)
+                                             DS))            (* ; "Account for super/subscripting")
                                                              (* ; 
                                        "Remember the starting Xpos for possible later underlining &c")
-                                      )
-                       ((CHARCODE (TAB %#^I))                (* ; 
+                                  (SETQ LOOKSTARTX (IDIFFERENCE TX XOFFSET)))
+                   ((CHARCODE (TAB %#^I))                    (* ; 
                                   "TAB: use the width from the cache to decide the right formatting.")
-                            [COND
-                               ((OR (IEQP CH (CHARCODE %#^I))
-                                    (fetch CLLEADER of OLOOKS)
-                                    (EQ (fetch CLUSERINFO of OLOOKS)
-                                        'DOTTEDLEADER))
-                                (LET* [[LEADERFONT (COND
-                                                      (HARDCOPYMODE (FONTCOPY (fetch CLFONT
-                                                                                 of OLOOKS)
-                                                                           'DEVICE HCPYDS))
-                                                      (T (fetch CLFONT of OLOOKS]
-                                       (DOTWIDTH (CHARWIDTH (CHARCODE %.)
-                                                        LEADERFONT))
-                                       (TTX (IPLUS TX DOTWIDTH (IDIFFERENCE DOTWIDTH (IREMAINDER
-                                                                                      TX DOTWIDTH]
-                                      (while (ILEQ TTX (IPLUS TX DX))
-                                         do (COND
-                                               (HARDCOPYMODE (MI-TEDIT.BLTCHAR
-                                                              (CHARCODE %.)
-                                                              DS
-                                                              (FIXR (FQUOTIENT (IDIFFERENCE TTX 
-                                                                                      DOTWIDTH)
-                                                                           SCALE))
-                                                              DISPLAYDATA DDPILOTBBT CLIPRIGHT))
-                                               ((OR TERMSA HARDCOPYMODE)
+                        (CL:WHEN (OR (IEQP CH (CHARCODE %#^I))
+                                     (fetch CLLEADER of OLOOKS)
+                                     (EQ (fetch CLUSERINFO of OLOOKS)
+                                         'DOTTEDLEADER))
+                            (LET* [[LEADERFONT (COND
+                                                  (HARDCOPYMODE (FONTCOPY (fetch CLFONT of OLOOKS)
+                                                                       'DEVICE HCPYDS))
+                                                  (T (fetch CLFONT of OLOOKS]
+                                   (DOTWIDTH (CHARWIDTH (CHARCODE %.)
+                                                    LEADERFONT))
+                                   (TTX (IPLUS TX DOTWIDTH (IDIFFERENCE DOTWIDTH (IREMAINDER TX 
+                                                                                        DOTWIDTH]
+                                  (while (ILEQ TTX (IPLUS TX DX))
+                                     do (COND
+                                           (HARDCOPYMODE (MI-TEDIT.BLTCHAR (CHARCODE %.)
+                                                                DS
+                                                                (FIXR (FQUOTIENT (IDIFFERENCE TTX 
+                                                                                        DOTWIDTH)
+                                                                             SCALE))
+                                                                DISPLAYDATA DDPILOTBBT CLIPRIGHT))
+                                           ((OR TERMSA HARDCOPYMODE)
                                                              (* ; "Using special instrns from TERMSA")
-                                                (\DSPPRINTCHAR DS (CHARCODE %.)))
-                                               (T            (* ; "Native charcodes")
-                                                  (MI-TEDIT.BLTCHAR (CHARCODE %.)
-                                                         DS
-                                                         (IDIFFERENCE TTX DOTWIDTH)
-                                                         DISPLAYDATA DDPILOTBBT CLIPRIGHT)))
-                                            (add TTX DOTWIDTH])
-                       ((CHARCODE (EOL LF CR))               (* ; "It's a CR")
-                            NIL)
-                       (NIL                                  (* ; "NIL signifies a character we've suppressed as part of line formatting (e.g., a discretionary hyphen we didn't use to break the line).  Show it as a thin black line.")
-                            (BLTSHADE BLACKSHADE DS TX 0 1 100 'PAINT))
-                       (COND
-                          [(SMALLP CH)                       (* ; 
+                                            (\DSPPRINTCHAR DS (CHARCODE %.)))
+                                           (T                (* ; "Native charcodes")
+                                              (MI-TEDIT.BLTCHAR (CHARCODE %.)
+                                                     DS
+                                                     (IDIFFERENCE TTX DOTWIDTH)
+                                                     DISPLAYDATA DDPILOTBBT CLIPRIGHT)))
+                                        (add TTX DOTWIDTH)))))
+                   ((CHARCODE (EOL LF CR)) 
+                        NIL)
+                   (NIL                                      (* ; "NIL signifies a character we've suppressed as part of line formatting (e.g., a discretionary hyphen we didn't use to break the line).  Show it as a thin black line.")
+                        (BLTSHADE BLACKSHADE DS TX 0 1 100 'PAINT))
+                   (COND
+                      [(SMALLP CH)                           (* ; 
                                                              "Normal character -- just display it.")
-                           (COND
-                              (HARDCOPYMODE (MI-TEDIT.BLTCHAR CH DS (FIXR (FQUOTIENT TX SCALE))
-                                                   DISPLAYDATA DDPILOTBBT CLIPRIGHT))
-                              ((OR TERMSA HARDCOPYMODE)      (* ; "Using special instrns from TERMSA")
-                               (\DSPPRINTCHAR DS CH))
-                              (T                             (* ; "Native charcodes")
-                                 (MI-TEDIT.BLTCHAR CH DS TX DISPLAYDATA DDPILOTBBT CLIPRIGHT]
-                          (T                                 (* ; "CH is an object.")
-                             (MOVETO (IDIFFERENCE (FIXR (FQUOTIENT TX SCALE))
-                                            XOFFSET)
-                                    (SETQ CURY (DSPYPOSITION NIL DS))
-                                    DS)                      (* ; 
+                       (COND
+                          (HARDCOPYMODE (MI-TEDIT.BLTCHAR CH DS (FIXR (FQUOTIENT TX SCALE))
+                                               DISPLAYDATA DDPILOTBBT CLIPRIGHT))
+                          ((OR TERMSA HARDCOPYMODE)          (* ; "Using special instrns from TERMSA")
+                           (\DSPPRINTCHAR DS CH))
+                          (T                                 (* ; "Native charcodes")
+                             (MI-TEDIT.BLTCHAR CH DS TX DISPLAYDATA DDPILOTBBT CLIPRIGHT]
+                      (T                                     (* ; "CH is an object.")
+                         (MOVETO (IDIFFERENCE (FIXR (FQUOTIENT TX SCALE))
+                                        XOFFSET)
+                                (SETQ CURY (DSPYPOSITION NIL DS))
+                                DS)                          (* ; 
                                                 "Go to the base line, left edge of the image region.")
-                             (APPLY* (IMAGEOBJPROP CH 'DISPLAYFN)
-                                    CH DS 'DISPLAY (ffetch (TEXTOBJ STREAMHINT) of TEXTOBJ))
+                         (APPLY* (IMAGEOBJPROP CH 'DISPLAYFN)
+                                CH DS 'DISPLAY (ffetch (TEXTOBJ STREAMHINT) of TEXTOBJ))
                                                              (* ; "Tell him to display himself here.")
-                             (DSPFONT (fetch CLFONT of OLOOKS)
-                                    DS)
-                             (MOVETO (IDIFFERENCE (FIXR (FQUOTIENT TX SCALE))
-                                            XOFFSET)
-                                    CURY DS)                 (* ; "Move to after the object's image")
-                             ]
-                   (add TX DX)                               (* ; "Update our X position")
-                finally (replace DDXPOSITION of DISPLAYDATA with (IDIFFERENCE (FIXR (FQUOTIENT TX 
-                                                                                           SCALE))
-                                                                        XOFFSET)) 
+                         (DSPFONT (fetch CLFONT of OLOOKS)
+                                DS)
+                         (MOVETO (IDIFFERENCE (FIXR (FQUOTIENT TX SCALE))
+                                        XOFFSET)
+                                CURY DS)                     (* ; "Move to after the object's image")
+                         ]
+               (add TX DX)                                   (* ; "Update our X position")
+            finally (replace DDXPOSITION of DISPLAYDATA with (IDIFFERENCE (FIXR (FQUOTIENT TX SCALE))
+                                                                    XOFFSET)) 
                                                              (* ; 
                                         "Make any necessary looks mods to the last run of characters")
-                      (TEDIT.MODIFYLOOKS LINE LOOKSTARTX DS OLOOKS (ffetch (LINEDESCRIPTOR DESCENT)
-                                                                      of LINE]
-         (BITBLT CACHE 0 0 WINDOWDS 0 (ffetch (LINEDESCRIPTOR YBOT) of LINE)
-                (ffetch (TEXTOBJ WRIGHT) of TEXTOBJ)
-                LHEIGHT
-                'INPUT
-                'REPLACE)                                    (* ; 
+                  (TEDIT.MODIFYLOOKS LINE LOOKSTARTX DS OLOOKS (ffetch (LINEDESCRIPTOR DESCENT)
+                                                                  of LINE]
+     (BITBLT CACHE 0 0 WINDOWDS 0 (ffetch (LINEDESCRIPTOR YBOT) of LINE)
+            (ffetch (TEXTOBJ WRIGHT) of TEXTOBJ)
+            LHEIGHT
+            'INPUT
+            'REPLACE)                                        (* ; 
                           "Paint the cached image on the screen (this lessens flicker during update)")
-         (COND
-            ((fetch (FMTSPEC FMTREVISED) of (ffetch (LINEDESCRIPTOR LFMTSPEC) of LINE))
+     (CL:WHEN (fetch (FMTSPEC FMTREVISED) of (ffetch (LINEDESCRIPTOR LFMTSPEC) of LINE))
                                                              (* ; 
                                                        "This paragraph has been revised, so mark it.")
-             (\TEDIT.MARK.REVISION TEXTOBJ (ffetch (LINEDESCRIPTOR LFMTSPEC) of LINE)
-                    WINDOWDS LINE)))
-         (SELECTQ (ffetch (LINEDESCRIPTOR LMARK) of LINE)
-             (GREY                                           (* ; 
+         (\TEDIT.MARK.REVISION TEXTOBJ (ffetch (LINEDESCRIPTOR LFMTSPEC) of LINE)
+                WINDOWDS LINE))
+     (SELECTQ (ffetch (LINEDESCRIPTOR LMARK) of LINE)
+         (GREY                                               (* ; 
                 "This line has some property that isn't visible to the user.  Tell him to be careful")
-                   (BITBLT NIL 0 0 WINDOWDS 0 (ffetch (LINEDESCRIPTOR YBASE) of LINE)
-                          6 6 'TEXTURE 'PAINT 42405))
-             (SOLID                                          (* ; 
+               (BITBLT NIL 0 0 WINDOWDS 0 (ffetch (LINEDESCRIPTOR YBASE) of LINE)
+                      6 6 'TEXTURE 'PAINT 42405))
+         (SOLID                                              (* ; 
                 "This line has some property that isn't visible to the user.  Tell him to be careful")
-                    (BITBLT NIL 0 0 WINDOWDS 0 (ffetch (LINEDESCRIPTOR YBASE) of LINE)
-                           6 6 'TEXTURE 'PAINT BLACKSHADE))
-             (BITBLT NIL 0 0 WINDOWDS 0 (ffetch (LINEDESCRIPTOR YBASE) of LINE)
-                    6 6 'TEXTURE 'REPLACE WHITESHADE])
+                (BITBLT NIL 0 0 WINDOWDS 0 (ffetch (LINEDESCRIPTOR YBASE) of LINE)
+                       6 6 'TEXTURE 'PAINT BLACKSHADE))
+         (BITBLT NIL 0 0 WINDOWDS 0 (ffetch (LINEDESCRIPTOR YBASE) of LINE)
+                6 6 'TEXTURE 'REPLACE WHITESHADE])
 
 (\TEDIT.LINECACHE
   [LAMBDA (CACHE WIDTH HEIGHT)                               (* jds "21-Apr-84 00:52")
@@ -2843,16 +2838,16 @@
           (RETURN NEWYBOT])
 )
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (12958 76685 (\FORMATLINE 12968 . 55914) (\FORMATLINE.NEWNSCHARS 55916 . 56947) (
-\TEDIT.NSCHAR.RUN 56949 . 63631) (\TEDIT.PURGE.SPACES 63633 . 64027) (\DOFORMATTING 64029 . 76683)) (
-76686 97811 (\DISPLAYLINE 76696 . 93718) (\TEDIT.LINECACHE 93720 . 94448) (\TEDIT.CREATE.LINECACHE 
-94450 . 95286) (\TEDIT.BLTCHAR 95288 . 97809)) (98426 200698 (TEDIT.CR.UPDATESCREEN 98436 . 99655) (
-TEDIT.DELETELINE 99657 . 100579) (TEDIT.INSERT.DISPLAYTEXT 100581 . 116725) (TEDIT.INSERT.UPDATESCREEN
- 116727 . 122707) (TEDIT.UPDATE.SCREEN 122709 . 123809) (\BACKFORMAT 123811 . 127612) (\FILLWINDOW 
-127614 . 141320) (\FIXDLINES 141322 . 147534) (\FIXILINES 147536 . 152657) (\SHOWTEXT 152659 . 155128)
- (\TEDIT.ADJUST.LINES 155130 . 162708) (\TEDIT.CLEAR.SCREEN.BELOW.LINE 162710 . 163448) (
-\TEDIT.CLOSEUPLINES 163450 . 170917) (\TEDIT.COPY.LINEDESCRIPTOR 170919 . 174029) (
-\TEDIT.FIXCHANGEDLINE 174031 . 184338) (\TEDIT.FIXCHANGEDPART 184340 . 195648) (\TEDIT.INSERTLINE 
-195650 . 196478) (\TEDIT.LINE.LIST 196480 . 196878) (\TEDIT.MARK.LINES.DIRTY 196880 . 198397) (
-\TEDIT.NEXT.LINE.BOTTOM 198399 . 200696)))))
+  (FILEMAP (NIL (12953 76680 (\FORMATLINE 12963 . 55909) (\FORMATLINE.NEWNSCHARS 55911 . 56942) (
+\TEDIT.NSCHAR.RUN 56944 . 63626) (\TEDIT.PURGE.SPACES 63628 . 64022) (\DOFORMATTING 64024 . 76678)) (
+76681 97162 (\DISPLAYLINE 76691 . 93069) (\TEDIT.LINECACHE 93071 . 93799) (\TEDIT.CREATE.LINECACHE 
+93801 . 94637) (\TEDIT.BLTCHAR 94639 . 97160)) (97777 200049 (TEDIT.CR.UPDATESCREEN 97787 . 99006) (
+TEDIT.DELETELINE 99008 . 99930) (TEDIT.INSERT.DISPLAYTEXT 99932 . 116076) (TEDIT.INSERT.UPDATESCREEN 
+116078 . 122058) (TEDIT.UPDATE.SCREEN 122060 . 123160) (\BACKFORMAT 123162 . 126963) (\FILLWINDOW 
+126965 . 140671) (\FIXDLINES 140673 . 146885) (\FIXILINES 146887 . 152008) (\SHOWTEXT 152010 . 154479)
+ (\TEDIT.ADJUST.LINES 154481 . 162059) (\TEDIT.CLEAR.SCREEN.BELOW.LINE 162061 . 162799) (
+\TEDIT.CLOSEUPLINES 162801 . 170268) (\TEDIT.COPY.LINEDESCRIPTOR 170270 . 173380) (
+\TEDIT.FIXCHANGEDLINE 173382 . 183689) (\TEDIT.FIXCHANGEDPART 183691 . 194999) (\TEDIT.INSERTLINE 
+195001 . 195829) (\TEDIT.LINE.LIST 195831 . 196229) (\TEDIT.MARK.LINES.DIRTY 196231 . 197748) (
+\TEDIT.NEXT.LINE.BOTTOM 197750 . 200047)))))
 STOP

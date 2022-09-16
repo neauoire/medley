@@ -1,12 +1,13 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED "14-Sep-2022 13:18:18" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-DEBUG.;30 33170  
+(FILECREATED "14-Sep-2022 17:47:54" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-DEBUG.;32 36749  
 
-      :CHANGES-TO (FNS SHOWTHISLINE)
+      :CHANGES-TO (FNS SPPRINT PLCHAIN)
+                  (VARS TEDIT-DEBUGCOMS)
 
-      :PREVIOUS-DATE "14-Sep-2022 08:37:20" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-DEBUG.;29)
+      :PREVIOUS-DATE "14-Sep-2022 13:18:18" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT-DEBUG.;30)
 
 
 (PRETTYCOMPRINT TEDIT-DEBUGCOMS)
@@ -14,8 +15,9 @@
 (RPAQQ TEDIT-DEBUGCOMS
        [(FNS ITS SP SPPRINT SPPRINT.OBJ TRY UPDATE-TEDIT CURRENTFILES NTHPIECE NPIECES TRYMENU 
              PRINTSPEC PTMENU MYTEDITMENU TEDITCLOSEW)
-        (FNS UPDATE-TEDIT CURRENTFILES EDIT-TEDIT MAKE-TEDIT-EXPORTS.ALL)
-        (FNS SHOWTHISLINE INSPECTLINES)
+        (FNS MAKE-TEDIT-EXPORTS.ALL)
+        (FNS UPDATE-TEDIT CURRENTFILES EDIT-TEDIT)
+        (FNS PLCHAIN PRINTLINE SEEFILE SHOWTHISLINE INSPECTLINES)
         (INITVARS (LASTTS NIL))
         (INITVARS [TINY '((MB.INSERT NIL)
                           (MB.TEXT "6" NIL)
@@ -102,7 +104,8 @@
     PC])
 
 (SPPRINT
-  [LAMBDA (PC)                                               (* ; "Edited  7-Sep-2022 18:24 by rmk")
+  [LAMBDA (PC)                                               (* ; "Edited 14-Sep-2022 17:47 by rmk")
+                                                             (* ; "Edited  7-Sep-2022 18:24 by rmk")
                                                              (* ; "Edited  1-Sep-2022 09:39 by rmk")
                                                              (* ; "Edited 24-Aug-2022 14:23 by rmk")
                                                              (* ; "Edited 14-Aug-2022 21:32 by rmk")
@@ -153,7 +156,7 @@
              (FOR I FROM 1 TO PLEN FIRST (PRIN1 '%" T)
                 DO (PRIN1 (CHARACTER (SELECTC PTYPE
                                          (THINFILE.PTYPE 
-                                              (BIN PCONTENTS))
+                                              (\INCCODE.EOLC PCONTENTS))
                                          (FATFILE1.PTYPE 
                                               (LOGOR PCHARSET (BIN PCONTENTS)))
                                          (FATFILE2.PTYPE 
@@ -416,6 +419,13 @@
 )
 (DEFINEQ
 
+(MAKE-TEDIT-EXPORTS.ALL
+  [LAMBDA NIL                                                (* ; "Edited 11-Sep-2022 23:43 by rmk")
+    (CNDIR (MEDLEYDIR "library>tedit"))
+    (GATHEREXPORTS TEDITFILES (MEDLEYDIR "library/tedit" "tedit-exports.all" T])
+)
+(DEFINEQ
+
 (UPDATE-TEDIT
   [LAMBDA (ASKFLAG FILES)                                    (* ; "Edited 19-Aug-2022 23:11 by rmk")
                                                              (* ; "Edited 27-Jul-93 19:00 by rmk:")
@@ -470,13 +480,81 @@
         (FOR F IN TEDITFILES DO (LOADCOMP F)
                                 (LOADFROM F)))
     (%. ANALYZE ON IN TEDITFILES])
-
-(MAKE-TEDIT-EXPORTS.ALL
-  [LAMBDA NIL                                                (* ; "Edited 11-Sep-2022 23:43 by rmk")
-    (CNDIR (MEDLEYDIR "library>tedit"))
-    (GATHEREXPORTS TEDITFILES (MEDLEYDIR "library/tedit" "tedit-exports.all" T])
 )
 (DEFINEQ
+
+(PLCHAIN
+  [LAMBDA (LN TEXTOBJ)                                       (* ; "Edited 14-Sep-2022 16:07 by rmk")
+                                                             (* ; "Edited 29-May-91 18:20 by jds")
+    (PRINTLINE LN TEXTOBJ)
+    (COND
+       ((fetch (LINEDESCRIPTOR NEXTLINE) of LN)
+        (PLCHAIN (fetch (LINEDESCRIPTOR NEXTLINE) of LN)
+               TEXTOBJ])
+
+(PRINTLINE
+  [LAMBDA (LN TEXTOBJ)                                       (* ; "Edited  8-Sep-2022 23:41 by rmk")
+                                                             (* ; "Edited 29-May-91 18:20 by jds")
+                                                             (* ; 
+                                                  "Print out a line descriptor in a reasonable form.")
+    (printout T "-----" T LN "  Bot: " (fetch (LINEDESCRIPTOR YBOT) of LN)
+           "  Base: "
+           (fetch (LINEDESCRIPTOR YBASE) of LN)
+           "  Height: "
+           (fetch (LINEDESCRIPTOR LHEIGHT) of LN)
+           "  Ascent: "
+           (fetch (LINEDESCRIPTOR ASCENT) of LN)
+           "  Descent: "
+           (fetch (LINEDESCRIPTOR DESCENT) of LN)
+           T "Char1: " (fetch (LINEDESCRIPTOR CHAR1) of LN)
+           "  Lim: "
+           (fetch (LINEDESCRIPTOR CHARLIM) of LN)
+           "  Top: "
+           (fetch (LINEDESCRIPTOR CHARTOP) of LN))
+    (COND
+       ((fetch (LINEDESCRIPTOR DIRTY) of LN)
+        (PRIN1 "  DIRTY" T)))
+    (COND
+       ((fetch (LINEDESCRIPTOR CR\END) of LN)
+        (PRIN1 "  CR-at-end" T)))
+    (COND
+       ((fetch (LINEDESCRIPTOR DELETED) of LN)
+        (PRIN1 "  DELETED" T)))
+    (COND
+       ((fetch (LINEDESCRIPTOR LHASPROT) of LN)
+        (PRIN1 "  [Protected text]" T)))
+    (COND
+       ((fetch (LINEDESCRIPTOR LHASTABS) of LN)
+        (PRIN1 "  Has Tabs" T)))
+    (PRIN1 ".
+")
+    (printout T "RMar: " (fetch (LINEDESCRIPTOR RIGHTMARGIN) of LN)
+           "  XLim: "
+           (fetch (LINEDESCRIPTOR LXLIM) of LN)
+           "  Left: "
+           (fetch (LINEDESCRIPTOR SPACELEFT) of LN)
+           T "Prev:  " (fetch (LINEDESCRIPTOR PREVLINE) of LN)
+           T "Next:  " (fetch (LINEDESCRIPTOR NEXTLINE) of LN)
+           T)
+    (COND
+       ((AND (IGEQ (fetch (LINEDESCRIPTOR CHAR1) of LN)
+                   1)
+             (ILEQ (fetch (LINEDESCRIPTOR CHAR1) of LN)
+                   (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ)))    (* ; "The line is real -- print it.")
+        (PRIN1 "|" T)
+        [bind CH (TSTREAM _ (fetch STREAMHINT of TEXTOBJ))
+           first (\TEXTSETFILEPTR TSTREAM (SUB1 (fetch (LINEDESCRIPTOR CHAR1) of LN))) for CHNO
+           from (fetch (LINEDESCRIPTOR CHAR1) of LN) to (IMIN (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ)
+                                                              (fetch (LINEDESCRIPTOR CHARLIM)
+                                                                 of LN))
+           do (SETQ CH (BIN TSTREAM))
+              (COND
+                 ((SMALLP CH)
+                  (PRIN1 (CHARACTER CH)
+                         T))
+                 (T (PRINT CH T]
+        (PRINTOUT T "|" T])
+
 
 (SHOWTHISLINE
   [LAMBDA (THISLINE)                                         (* ; "Edited 14-Sep-2022 13:17 by rmk")
@@ -587,11 +665,12 @@
 (ADDTOVAR LAMA )
 )
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (2521 24735 (ITS 2531 . 3466) (SP 3468 . 4881) (SPPRINT 4883 . 8421) (SPPRINT.OBJ 8423
- . 8941) (TRY 8943 . 10096) (UPDATE-TEDIT 10098 . 11792) (CURRENTFILES 11794 . 12793) (NTHPIECE 12795
- . 13117) (NPIECES 13119 . 13535) (TRYMENU 13537 . 13821) (PRINTSPEC 13823 . 14046) (PTMENU 14048 . 
-14453) (MYTEDITMENU 14455 . 24388) (TEDITCLOSEW 24390 . 24733)) (24736 28230 (UPDATE-TEDIT 24746 . 
-26440) (CURRENTFILES 26442 . 27441) (EDIT-TEDIT 27443 . 27969) (MAKE-TEDIT-EXPORTS.ALL 27971 . 28228))
- (28231 29826 (SHOWTHISLINE 28241 . 29399) (INSPECTLINES 29401 . 29824)) (30909 32901 (PFOT 30919 . 
-31318) (DFOT 31320 . 32125) (OTFILES 32127 . 32899)))))
+  (FILEMAP (NIL (2605 24938 (ITS 2615 . 3550) (SP 3552 . 4965) (SPPRINT 4967 . 8624) (SPPRINT.OBJ 8626
+ . 9144) (TRY 9146 . 10299) (UPDATE-TEDIT 10301 . 11995) (CURRENTFILES 11997 . 12996) (NTHPIECE 12998
+ . 13320) (NPIECES 13322 . 13738) (TRYMENU 13740 . 14024) (PRINTSPEC 14026 . 14249) (PTMENU 14251 . 
+14656) (MYTEDITMENU 14658 . 24591) (TEDITCLOSEW 24593 . 24936)) (24939 25208 (MAKE-TEDIT-EXPORTS.ALL 
+24949 . 25206)) (25209 28444 (UPDATE-TEDIT 25219 . 26913) (CURRENTFILES 26915 . 27914) (EDIT-TEDIT 
+27916 . 28442)) (28445 33405 (PLCHAIN 28455 . 28874) (PRINTLINE 28876 . 31817) (SHOWTHISLINE 31820 . 
+32978) (INSPECTLINES 32980 . 33403)) (34488 36480 (PFOT 34498 . 34897) (DFOT 34899 . 35704) (OTFILES 
+35706 . 36478)))))
 STOP

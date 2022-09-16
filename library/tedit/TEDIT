@@ -1,12 +1,12 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED "14-Sep-2022 08:41:33" 
-{DSK}<Users>kaplan>Local>medley3.5>working-medley>library>tedit>TEDIT.;77 134690 
+(FILECREATED "14-Sep-2022 16:09:17" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT.;78 130638 
 
-      :CHANGES-TO (VARS TEDITFILES)
+      :CHANGES-TO (VARS TEDITCOMS)
 
-      :PREVIOUS-DATE "13-Sep-2022 12:32:14" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT.;74)
+      :PREVIOUS-DATE "14-Sep-2022 08:41:33" 
+{DSK}<users>kaplan>local>medley3.5>working-medley>library>tedit>TEDIT.;77)
 
 
 (* ; "
@@ -35,8 +35,6 @@ Copyright (c) 1983-1993, 1995, 1999, 2018, 2021 by Venue & Xerox Corporation.
         (P (MOVD? 'NILL 'OBJECTOUTOFTEDIT))
                                                              (* ; 
                                     "HOOK for looked-string copy, etc. Used in \TEDIT.FOREIGN.COPY?.")
-        (COMS                                                (* ; "Debugging functions")
-              (FNS PLCHAIN PRINTLINE SEEFILE))
         (COMS                                                (* ; "Object-oriented editing")
               (FNS TEDIT.INSERT.OBJECT TEDIT.EDIT.OBJECT TEDIT.FIND.OBJECT TEDIT.PUT.OBJECT 
                    TEDIT.GET.OBJECT TEDIT.OBJECT.CHANGED))
@@ -1698,98 +1696,6 @@ Copyright (c) 1983-1993, 1995, 1999, 2018, 2021 by Venue & Xerox Corporation.
 
 
 
-(* ; "Debugging functions")
-
-(DEFINEQ
-
-(PLCHAIN
-  [LAMBDA (LN)                                           (* ; "Edited 29-May-91 18:20 by jds")
-    (PRINTLINE LN)
-    (COND
-       ((fetch (LINEDESCRIPTOR NEXTLINE) of LN)
-        (PLCHAIN (fetch (LINEDESCRIPTOR NEXTLINE) of LN])
-
-(PRINTLINE
-  [LAMBDA (LN)                                               (* ; "Edited  8-Sep-2022 23:41 by rmk")
-                                                             (* ; "Edited 29-May-91 18:20 by jds")
-                                                             (* ; 
-                                                  "Print out a line descriptor in a reasonable form.")
-    (printout T "-----" T LN "  Bot: " (fetch (LINEDESCRIPTOR YBOT) of LN)
-           "  Base: "
-           (fetch (LINEDESCRIPTOR YBASE) of LN)
-           "  Height: "
-           (fetch (LINEDESCRIPTOR LHEIGHT) of LN)
-           "  Ascent: "
-           (fetch (LINEDESCRIPTOR ASCENT) of LN)
-           "  Descent: "
-           (fetch (LINEDESCRIPTOR DESCENT) of LN)
-           T "Char1: " (fetch (LINEDESCRIPTOR CHAR1) of LN)
-           "  Lim: "
-           (fetch (LINEDESCRIPTOR CHARLIM) of LN)
-           "  Top: "
-           (fetch (LINEDESCRIPTOR CHARTOP) of LN))
-    (COND
-       ((fetch (LINEDESCRIPTOR DIRTY) of LN)
-        (PRIN1 "  DIRTY" T)))
-    (COND
-       ((fetch (LINEDESCRIPTOR CR\END) of LN)
-        (PRIN1 "  CR-at-end" T)))
-    (COND
-       ((fetch (LINEDESCRIPTOR DELETED) of LN)
-        (PRIN1 "  DELETED" T)))
-    (COND
-       ((fetch (LINEDESCRIPTOR LHASPROT) of LN)
-        (PRIN1 "  [Protected text]" T)))
-    (COND
-       ((fetch (LINEDESCRIPTOR LHASTABS) of LN)
-        (PRIN1 "  Has Tabs" T)))
-    (PRIN1 ".
-")
-    (printout T "RMar: " (fetch (LINEDESCRIPTOR RIGHTMARGIN) of LN)
-           "  XLim: "
-           (fetch (LINEDESCRIPTOR LXLIM) of LN)
-           "  Left: "
-           (fetch (LINEDESCRIPTOR SPACELEFT) of LN)
-           T "Prev:  " (fetch (LINEDESCRIPTOR PREVLINE) of LN)
-           T "Next:  " (fetch (LINEDESCRIPTOR NEXTLINE) of LN)
-           T)
-    (COND
-       ((AND (IGEQ (fetch (LINEDESCRIPTOR CHAR1) of LN)
-                   1)
-             (ILEQ (fetch (LINEDESCRIPTOR CHAR1) of LN)
-                   (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ)))    (* ; "The line is real -- print it.")
-        (PRIN1 "|" T)
-        [bind CH (TSTREAM _ (fetch STREAMHINT of TEXTOBJ))
-           first (\TEXTSETFILEPTR TSTREAM (SUB1 (fetch (LINEDESCRIPTOR CHAR1) of LN))) for CHNO
-           from (fetch (LINEDESCRIPTOR CHAR1) of LN) to (IMIN (fetch (TEXTOBJ TEXTLEN) of TEXTOBJ)
-                                                              (fetch (LINEDESCRIPTOR CHARLIM)
-                                                                 of LN))
-           do (SETQ CH (BIN TSTREAM))
-              (COND
-                 ((SMALLP CH)
-                  (PRIN1 (CHARACTER CH)
-                         T))
-                 (T (PRINT CH T]
-        (PRINTOUT T "|" T])
-
-(SEEFILE
-  [LAMBDA (FILE ST ND)                                       (* jds " 4-NOV-83 20:21")
-    (PROG (CH)
-          [SETQ FILE (OR (OPENP FILE)
-                         (OPENSTREAM FILE 'INPUT]
-          (SETFILEPTR FILE (OR ST 0))
-          (for I from (OR ST 0) to (OR ND (SUB1 (GETEOFPTR FILE)))
-             do (printout T I 5 (SETQ CH (BIN FILE))
-                       9
-                       (COND
-                          [(ILEQ CH (CHARCODE ^Z))
-                           (CONCAT "^" (CHARACTER (IPLUS CH (CHARCODE @]
-                          (T (CHARACTER CH)))
-                       T])
-)
-
-
-
 (* ; "Object-oriented editing")
 
 (DEFINEQ
@@ -2060,7 +1966,7 @@ Copyright (c) 1983-1993, 1995, 1999, 2018, 2021 by Venue & Xerox Corporation.
 (* ; "TEDIT Support information")
 
 
-(RPAQQ TEDITSYSTEMDATE "14-Sep-2022 08:41:33")
+(RPAQQ TEDITSYSTEMDATE "14-Sep-2022 16:09:17")
 
 
 
@@ -2072,19 +1978,18 @@ Copyright (c) 1983-1993, 1995, 1999, 2018, 2021 by Venue & Xerox Corporation.
 (PUTPROPS TEDIT COPYRIGHT ("Venue & Xerox Corporation" 1983 1984 1985 1986 1987 1988 1989 1990 1991 
 1992 1993 1995 1999 2018 2021))
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (3270 3563 (\CREATE.TEDIT.RESTART.MENU 3280 . 3561)) (3891 112022 (\TEDIT2 3901 . 6652) 
-(COERCETEXTOBJ 6654 . 12782) (TEDIT 12784 . 18120) (TEDITSTRING 18122 . 18681) (TEDIT-SEE 18683 . 
-20836) (TEDIT.CHARWIDTH 20838 . 22862) (TEDIT.COPY 22864 . 31317) (TEDIT.DELETE 31319 . 32009) (
-TEDIT.DO.BLUEPENDINGDELETE 32011 . 34874) (TEDIT.INSERT 34876 . 40561) (TEDIT.KILL 40563 . 42120) (
-TEDIT.MAPLINES 42122 . 43521) (TEDIT.MAPPIECES 43523 . 44387) (TEDIT.MOVE 44389 . 53497) (TEDIT.QUIT 
-53499 . 55499) (TEDIT.STRINGWIDTH 55501 . 56172) (TEDIT.\INSERT 56174 . 58199) (TEXTOBJ 58201 . 59326)
- (TEXTSTREAM 59328 . 61023) (\TEDIT.INCLUDE 61025 . 64925) (\TEDIT.INSERT.PIECES 64927 . 72941) (
-\TEDIT.MOVE.PIECEMAPFN 72943 . 74579) (\TEDIT.OBJECT.SHOWSEL 74581 . 78233) (\TEDIT.RESTARTFN 78235 . 
-80308) (\TEDIT.CHARDELETE 80310 . 84202) (\TEDIT.COPY.PIECEMAPFN 84204 . 87335) (\TEDIT.DELETE 87337
- . 94838) (\TEDIT.DIFFUSE.PARALOOKS 94840 . 97654) (\TEDIT.FOREIGN.COPY? 97656 . 101630) (\TEDIT.QUIT 
-101632 . 104778) (\TEDIT.WORDDELETE 104780 . 109322) (\TEDIT1 109324 . 112020)) (112172 116046 (
-PLCHAIN 112182 . 112456) (PRINTLINE 112458 . 115407) (SEEFILE 115409 . 116044)) (116087 134079 (
-TEDIT.INSERT.OBJECT 116097 . 124312) (TEDIT.EDIT.OBJECT 124314 . 126570) (TEDIT.FIND.OBJECT 126572 . 
-127553) (TEDIT.PUT.OBJECT 127555 . 129254) (TEDIT.GET.OBJECT 129256 . 132427) (TEDIT.OBJECT.CHANGED 
-132429 . 134077)))))
+  (FILEMAP (NIL (3129 3422 (\CREATE.TEDIT.RESTART.MENU 3139 . 3420)) (3750 111881 (\TEDIT2 3760 . 6511) 
+(COERCETEXTOBJ 6513 . 12641) (TEDIT 12643 . 17979) (TEDITSTRING 17981 . 18540) (TEDIT-SEE 18542 . 
+20695) (TEDIT.CHARWIDTH 20697 . 22721) (TEDIT.COPY 22723 . 31176) (TEDIT.DELETE 31178 . 31868) (
+TEDIT.DO.BLUEPENDINGDELETE 31870 . 34733) (TEDIT.INSERT 34735 . 40420) (TEDIT.KILL 40422 . 41979) (
+TEDIT.MAPLINES 41981 . 43380) (TEDIT.MAPPIECES 43382 . 44246) (TEDIT.MOVE 44248 . 53356) (TEDIT.QUIT 
+53358 . 55358) (TEDIT.STRINGWIDTH 55360 . 56031) (TEDIT.\INSERT 56033 . 58058) (TEXTOBJ 58060 . 59185)
+ (TEXTSTREAM 59187 . 60882) (\TEDIT.INCLUDE 60884 . 64784) (\TEDIT.INSERT.PIECES 64786 . 72800) (
+\TEDIT.MOVE.PIECEMAPFN 72802 . 74438) (\TEDIT.OBJECT.SHOWSEL 74440 . 78092) (\TEDIT.RESTARTFN 78094 . 
+80167) (\TEDIT.CHARDELETE 80169 . 84061) (\TEDIT.COPY.PIECEMAPFN 84063 . 87194) (\TEDIT.DELETE 87196
+ . 94697) (\TEDIT.DIFFUSE.PARALOOKS 94699 . 97513) (\TEDIT.FOREIGN.COPY? 97515 . 101489) (\TEDIT.QUIT 
+101491 . 104637) (\TEDIT.WORDDELETE 104639 . 109181) (\TEDIT1 109183 . 111879)) (112035 130027 (
+TEDIT.INSERT.OBJECT 112045 . 120260) (TEDIT.EDIT.OBJECT 120262 . 122518) (TEDIT.FIND.OBJECT 122520 . 
+123501) (TEDIT.PUT.OBJECT 123503 . 125202) (TEDIT.GET.OBJECT 125204 . 128375) (TEDIT.OBJECT.CHANGED 
+128377 . 130025)))))
 STOP
