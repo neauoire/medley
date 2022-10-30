@@ -11,9 +11,12 @@ fi
     ./scripts/loadup-mid-from-init.sh && \
     ./scripts/loadup-lisp-from-mid.sh && \
     ./scripts/loadup-full-from-lisp.sh && \
-    ./scripts/loadup-aux.sh && \
-    ./scripts/copy-all.sh
+    ./scripts/loadup-aux.sh
 
+echo "loadups are in $MEDLEYDIR/tmp"
+echo use
+echo "   ./scripts/copy-all.sh   "
+echo "to copy to loadups library"
 echo "**** DONE ****"
 
 
