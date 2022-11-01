@@ -1,30 +1,33 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED "18-Jul-2022 12:12:11" {DSK}<home>larry>medley>sources>MEDLEYDIR.;2 6649   
+(FILECREATED "31-Oct-2022 19:12:34" {DSK}<home>larry>ilisp>medley>sources>MEDLEYDIR.;3 10526  
 
-      :CHANGES-TO (FNS MEDLEY-INIT-VARS)
+      :CHANGES-TO (FNS MEDLEY-INIT-VARS MEDLEYDIR)
 
-      :PREVIOUS-DATE "13-Jul-2022 15:34:07" {DSK}<home>larry>medley>sources>MEDLEYDIR.;1)
+      :PREVIOUS-DATE "31-Oct-2022 17:49:53" {DSK}<home>larry>ilisp>medley>sources>MEDLEYDIR.;2)
 
 
 (PRETTYCOMPRINT MEDLEYDIRCOMS)
 
 (RPAQQ MEDLEYDIRCOMS
-       [
+       (
         (* ;; "set up initialization for file paths relative to where Medley is installed. This assumes that the environment variable MEDLEYDIR is set (usually by the ./run-medley script) to the (unix path) and all of the other directories variables are set relative to that (by MEDLEY-INIT-VARS)")
 
-        (FNS MEDLEY-INIT-VARS MEDLEYDIR)
-        (INITVARS (MEDLEYDIR))
-        (ADDVARS (BEFORESYSOUTFORMS (SETQ MEDLEYDIR))
-               (BEFOREMAKESYSFORMS (SETQ MEDLEYDIR))
-               (AFTERSYSOUTFORMS (MEDLEY-INIT-VARS))
-               (AFTERMAKESYSFORMS (MEDLEY-INIT-VARS)))
+        (FNS MEDLEY-INIT-VARS MEDLEYDIR MEDLEYSUBSTDIR)
+        (INITVARS (MEDLEYDIR)
+               (\SAVE.MEDLEYDIR))
+        (ADDVARS (AROUNDEXITFNS MEDLEY-INIT-VARS))
         
-        (* ;; 
- "NOTE:  Do not use backquote in the variable definitions.  These get evaluated early in the loadup.")
+        (* ;; "**WARNING**  The EVALed expressions get run early in the loadup.")
 
         (VARS MEDLEY-INIT-VARS)
-        (DECLARE%: EVAL@COMPILE DOCOPY (ADDVARS (GLOBALVARS MEDLEYDIR MEDLEY-INIT-VARS])
+        
+        (* ;; 
+        "don't use BCOMPL for filetype because backquote can't be read when this file is loaded")
+
+        (PROP FILETYPE MEDLEYDIR)
+        (DECLARE%: EVAL@COMPILE DONTCOPY (GLOBALVARS MEDLEYDIR MEDLEY-INIT-VARS \SAVE.MEDLEYDIR 
+                                                DIRECTORIES LOGINHOST/DIR))))
 
 
 
@@ -35,85 +38,142 @@
 (DEFINEQ
 
 (MEDLEY-INIT-VARS
-  [LAMBDA (CLEAR)                                          (* ; "Edited 18-Jul-2022 12:11 by larry")
-                                                           (* ; "Edited 21-Aug-2021 18:23 by larry")
+  [LAMBDA (EVENT)                                            (* ; "Edited 31-Oct-2022 19:08 by lmm")
 
-    (* ;; "MEDLEY-INIT-VARS has variables that might need to get reset. ")
+    (* ;; "Called on events including before & after loadup")
 
-    (if CLEAR
-        then (SETQ MEDLEYDIR NIL)
-             (SETQ XCL::*WHERE-IS-CASH-FILES* NIL)
-             (for X in MEDLEY-INIT-VARS do (SET (CAR X)))
-      elseif [OR (NOT (BOUNDP 'MEDLEYDIR))
-                 (AND (NULL MEDLEYDIR)
-                      (NULL (MEDLEYDIR]
-        then (PRINTOUT T "WARNING: MEDLEYDIR not set correctly" 
-                    " set it and call (MEDLEY-INIT-VARS) again" T)
-      else [for X in MEDLEY-INIT-VARS do (SET (CAR X)
-                                              (EVAL (CADR X] 
+    (SELECTQ EVENT
+        ((BEFOREMAKESYS T)                                   (* ; "Clear old values")
+             (CL:UNLESS (NULL \SAVE.MEDLEYDIR)               (* ; "don't clear again")
+                 (FOR X IN MEDLEY-INIT-VARS DO (IF (EQ (CL:THIRD X)
+                                                       'RESET)
+                                                   THEN (SETTOPVAL (CAR X)
+                                                               NIL)))
+                 (SETQ \SAVE.MEDLEYDIR NIL)))
+        ((BEFORESYSOUT BEFORELOGOUT BEFORESAVEVM)            (* ; 
+                                                           "save old values of controlling variables")
+             (SETQ \SAVE.MEDLEYDIR (LIST MEDLEYDIR LOGINHOST/DIR)))
+        ((AFTERSYSOUT AFTERMAKESYS AFTERLOGOUT AFTERSAVEVM RESTART INIT NIL) 
+                                                                             (* ;; 
+                                                                          "basically all other cases")
 
-           (* ;; "WHEREIS doesn't follow conventions")
+             (PROG (OLDMD NEWMD OLDLOGIN NEWLOGIN TMP)
+                   (SETQ MEDLEYDIR)
+                   (SETQ NEWMD (MEDLEYDIR))
+                   (SETQ LOGINHOST/DIR (MEDLEYDIR "login"))
+                   (IF (EQ \SAVE.MEDLEYDIR T)
+                       THEN                                  (* ; " Already restored")
+                     ELSEIF (NULL \SAVE.MEDLEYDIR)
+                       THEN                                  (* ; "clean slate")
+                     ELSE 
+                          (* ;; " check for changing")
 
-           [LET [(NEWSYS (STRPOS "tmp/" (UNIX-GETENV "LDESRCESYSOUT"]
-                (if NEWSYS
-                    then (push DIRECTORIES (MEDLEYDIR "tmp")))
-                (CL:WHEN (GETD 'XCL::ADD-WHERE-IS-DATABASE)
-                    (SETQ XCL::*WHERE-IS-CASH-FILES* NIL)
-                    (NLSETQ (XCL::ADD-WHERE-IS-DATABASE (MEDLEYDIR (if NEWSYS
-                                                                       then "tmp"
-                                                                     else "loadups")
-                                                               "WHEREIS.HASH"))))]
-           NIL])
+                          (SETQ OLDMD (CAR \SAVE.MEDLEYDIR))
+                          (SETQ OLDLOGIN (CADR \SAVE.MEDLEYDIR)))
+                   (for X VAR VAL in MEDLEY-INIT-VARS
+                      do (SETQ VAR (CAR X)) 
+
+                         (* ;; " variables on MEDLEY-INIT-VARS should not be NIL, NOBIND")
+
+                         [IF (OR (NULL \SAVE.MEDLEYDIR)
+                                 (EQ (CL:THIRD X)
+                                     'RESET)
+                                 (NOT (BOUNDP VAR))
+                                 (EQ (GETTOPVAL VAR)
+                                     'NOBIND))
+                             THEN (SETQ VAL (EVAL (CL:SECOND X)))
+                           ELSE (SETQ VAL (GETTOPVAL VAR))
+                                (CL:UNLESS (STRING-EQUAL OLDMD NEWMD)
+                                    (SETQ VAL (MEDLEYSUBSTDIR OLDMD NEWMD VAL)))
+                                (CL:UNLESS (STRING-EQUAL OLDLOGIN LOGINHOST/DIR)
+                                    (SETQ VAL (MEDLEYSUBSTDIR OLDLOGIN LOGINHOST/DIR VAL)))]
+                         (CL:UNLESS (EQUAL (GETTOPVAL VAR)
+                                           VAL)
+                                (/SETTOPVAL VAR VAL)))
+
+              (* ;; "")
+
+                   (SETQ \SAVE.MEDLEYDIR T)))
+        NIL])
 
 (MEDLEYDIR
-  [LAMBDA (DIRNAME FILENAME OUTPUT NOERROR)                (* ; "Edited  5-Mar-2022 12:43 by larry")
+  [LAMBDA (DIRNAME FILENAME NEWP NOERROR)                    (* ; "Edited 31-Oct-2022 19:12 by lmm")
+                                                             (* ; "Edited 29-Oct-2022 09:14 by lmm")
+                                                             (* ; "Edited 18-Oct-2022 17:49 by lmm")
+                                                             (* ; "Edited  5-Mar-2022 12:43 by lmm")
                                                           (* ; "Edited  2-Dec-2021 20:23 by kaplan")
-    (DECLARE (GLOBALVARS MEDLEYDIR))
-    (DECLARE (GLOBALVARS MEDLEYDIR))
-    (if (NULL DIRNAME)
-        then (if (OR (NOT (BOUNDP 'MEDLEYDIR))
-                     (NOT MEDLEYDIR))
-                 then (OR (SETQ MEDLEYDIR (DIRECTORYNAME (OR (UNIX-GETENV "MEDLEYDIR")
-                                                             T)))
-                          (DIRECTORYNAME T))
-               elseif (STRPOS "/" MEDLEYDIR)
-                 then (SETQ MEDLEYDIR (DIRECTORYNAME MEDLEYDIR))
-               else MEDLEYDIR)
-      elseif (LISTP DIRNAME)
-        then (for X Y in DIRNAME when (SETQ Y (MEDLEYDIR X FILENAME OUTPUT NOERROR)) collect Y)
-      elseif FILENAME
-        then [if (NULL (SETQ DIRNAME (MEDLEYDIR DIRNAME NIL OUTPUT NOERROR)))
-                 then (OR NOERROR (SHOULDNT))
-                      NIL
-               else (SETQ FILENAME (CONCAT DIRNAME FILENAME))
-                    (if OUTPUT
-                        then FILENAME
-                      else (OR (INFILEP FILENAME)
-                               (if NOERROR
-                                   then NIL
-                                 else (ERROR "No such medley file" FILENAME]
-      else (OR (DIRECTORYNAME (CONCAT (MEDLEYDIR)
-                                     DIRNAME ">")
-                      NIL OUTPUT)
-               (if NOERROR
-                   then NIL
-                 else (ERROR "No such medley directory" DIRNAME])
+    (COND
+       ((NULL DIRNAME)
+        (if (OR (NOT (BOUNDP 'MEDLEYDIR))
+                (NOT MEDLEYDIR))
+            then (OR (SETQ MEDLEYDIR (DIRECTORYNAME (OR (UNIX-GETENV "MEDLEYDIR")
+                                                        T)))
+                     (DIRECTORYNAME T))
+          elseif (STRPOS "/" MEDLEYDIR)
+            then (SETQ MEDLEYDIR (DIRECTORYNAME MEDLEYDIR))
+          else MEDLEYDIR))
+       ((LISTP DIRNAME)
+        (for X Y in DIRNAME when (SETQ Y (MEDLEYDIR X FILENAME NEWP NOERROR)) collect Y))
+       [(EQUAL DIRNAME "login")                              (* ; "special case for login dir")
+        (DIRECTORYNAME (OR (UNIX-GETENV "LOGINDIR")
+                           (UNIX-GETENV "HOME"]
+       [FILENAME (if (SETQ DIRNAME (MEDLEYDIR DIRNAME NIL NEWP NOERROR))
+                     then (SETQ FILENAME (CONCAT DIRNAME FILENAME))
+                          (if NEWP
+                              then FILENAME
+                            else (OR (INFILEP FILENAME)
+                                     (if NOERROR
+                                         then NIL
+                                       else (ERROR "No such medley file" FILENAME]
+       (T (DIRECTORYNAME (CONCAT (MEDLEYDIR)
+                                DIRNAME ">")
+                 NIL NEWP])
+
+(MEDLEYSUBSTDIR
+  [LAMBDA (OLD NEW BODY)                                     (* ; "Edited 29-Oct-2022 15:30 by lmm")
+                                                  (* ; 
+                                         "Edited 18-Oct-2022 18:06 by lmm: assumes OLD is upper case")
+    (COND
+       ((NULL BODY)
+        NIL)
+       [(LISTP BODY)
+        (LET [(A (MEDLEYSUBSTDIR OLD NEW (CAR BODY)))
+              (D (MEDLEYSUBSTDIR OLD NEW (CDR BODY]
+             (COND
+                ((AND (EQ A (CAR BODY))
+                      (EQ D (CDR BODY)))
+                 BODY)
+                (T (CONS A D]
+       ((STRINGP BODY)
+        (COND
+           ((AND (IGEQ (NCHARS BODY)
+                       (NCHARS OLD))
+                 (STRING-EQUAL (SUBSTRING BODY 1 (NCHARS OLD))
+                        OLD))
+            (CONCAT NEW (OR (SUBSTRING BODY (ADD1 (NCHARS OLD)))
+                            "")))
+           (T BODY)))
+       ((LITATOM BODY)
+        (COND
+           ((AND (IGEQ (NCHARS BODY)
+                       (NCHARS OLD))
+                 (STRING-EQUAL (SUBSTRING BODY 1 (NCHARS OLD))
+                        OLD))
+            (PACK* NEW (OR (SUBSTRING BODY (ADD1 (NCHARS OLD)))
+                           "")))
+           (T BODY)))
+       (T BODY])
 )
 
 (RPAQ? MEDLEYDIR )
 
-(ADDTOVAR BEFORESYSOUTFORMS (SETQ MEDLEYDIR))
+(RPAQ? \SAVE.MEDLEYDIR )
 
-(ADDTOVAR BEFOREMAKESYSFORMS (SETQ MEDLEYDIR))
-
-(ADDTOVAR AFTERSYSOUTFORMS (MEDLEY-INIT-VARS))
-
-(ADDTOVAR AFTERMAKESYSFORMS (MEDLEY-INIT-VARS))
+(ADDTOVAR AROUNDEXITFNS MEDLEY-INIT-VARS)
 
 
 
-(* ;; 
-"NOTE:  Do not use backquote in the variable definitions.  These get evaluated early in the loadup.")
+(* ;; "**WARNING**  The EVALed expressions get run early in the loadup.")
 
 
 (RPAQQ MEDLEY-INIT-VARS
@@ -121,26 +181,42 @@
         [LISPSOURCEDIRECTORIES (MEDLEYDIR '("sources"]
         (LISPSOURCEDIRECTORY (CAR LISPSOURCEDIRECTORIES))
         (IRM.HOST&DIR (MEDLEYDIR '"docs/dinfo"))
-        (IRM.DINFOGRAPH)
-        (DIRECTORIES (APPEND LISPUSERSDIRECTORIES LISPSOURCEDIRECTORIES))
-        [LOGINHOST/DIR (DIRECTORYNAME (OR (UNIX-GETENV "LOGINDIR")
-                                          (UNIX-GETENV "HOME"]
+        (IRM.DINFOGRAPH NIL)
+        (DIRECTORIES (APPEND (MEDLEYDIR '("sources" "tmp"))
+                            LISPUSERSDIRECTORIES))
+        (LOGINHOST/DIR (MEDLEYDIR "login"))
         [USERGREETFILES (LIST (CONS LOGINHOST/DIR '("INIT" COM))
                               (CONS LOGINHOST/DIR '("INIT"]
-        (DISPLAYFONTDIRECTORIES (MEDLEYDIR '("fonts/displayfonts" "fonts/altofonts" "fonts/adobe" 
-                                                   "fonts/big" "fonts/other")
-                                       NIL NIL T))
-        (POSTSCRIPTFONTDIRECTORIES (MEDLEYDIR '("fonts/postscriptfonts")
-                                          NIL NIL T))
-        (INTERPRESSFONTDIRECTORIES (MEDLEYDIR '("fonts/ipfonts")
-                                          NIL NIL T))
-        (UNICODEDIRECTORIES (MEDLEYDIR '("unicode/xerox")
-                                   NIL NIL T))
-        (XCL::*WHERE-IS-CASH-FILES*)))
-(DECLARE%: EVAL@COMPILE DOCOPY 
+        [DISPLAYFONTDIRECTORIES (MEDLEYDIR '("fonts/displayfonts" "fonts/altofonts" "fonts/adobe" 
+                                                   "fonts/big" "fonts/other"]
+        [POSTSCRIPTFONTDIRECTORIES (MEDLEYDIR '("fonts/postscriptfonts"]
+        [INTERPRESSFONTDIRECTORIES (MEDLEYDIR '("fonts/ipfonts"]
+        [UNICODEDIRECTORIES (MEDLEYDIR '("unicode/xerox"]
+        (XCL::*WHERE-IS-CASH-FILES* (COND ((GETD 'XCL::ADD-WHERE-IS-DATABASE)
+                                           (SETQ XCL::*WHERE-IS-CASH-FILES* NIL)
+                                           [NLSETQ (XCL::ADD-WHERE-IS-DATABASE (OR (MEDLEYDIR "tmp" 
+                                                                                       "WHEREIS.HASH"
+                                                                                          )
+                                                                                   (MEDLEYDIR 
+                                                                                          "loadups" 
+                                                                                       "WHEREIS.HASH"
+                                                                                          ]
+                                           XCL::*WHERE-IS-CASH-FILES*))
+               RESET)))
 
-(ADDTOVAR GLOBALVARS MEDLEYDIR MEDLEY-INIT-VARS)
+
+
+(* ;; "don't use BCOMPL for filetype because backquote can't be read when this file is loaded")
+
+
+(PUTPROPS MEDLEYDIR FILETYPE BCOMPL)
+(DECLARE%: EVAL@COMPILE DONTCOPY 
+(DECLARE%: DOEVAL@COMPILE DONTCOPY
+
+(GLOBALVARS MEDLEYDIR MEDLEY-INIT-VARS \SAVE.MEDLEYDIR DIRECTORIES LOGINHOST/DIR)
+)
 )
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (1518 4925 (MEDLEY-INIT-VARS 1528 . 3139) (MEDLEYDIR 3141 . 4923)))))
+  (FILEMAP (NIL (1635 8100 (MEDLEY-INIT-VARS 1645 . 4848) (MEDLEYDIR 4850 . 6797) (MEDLEYSUBSTDIR 6799
+ . 8098)))))
 STOP

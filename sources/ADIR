@@ -1,16 +1,14 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED "23-May-2022 12:02:10" {DSK}<users>kaplan>local>medley3.5>working-medley>sources>ADIR.;14 65884  
+(FILECREATED "31-Oct-2022 16:44:26" {DSK}<home>larry>ilisp>medley>sources>ADIR.;4 65659  
 
-      :CHANGES-TO (FNS UNPACKFILENAME.STRING)
-                  (VARS ADIRCOMS)
+      :CHANGES-TO (FNS INTERPRET.REM.CM)
 
-      :PREVIOUS-DATE "26-Mar-2022 09:39:50" 
-{DSK}<users>kaplan>local>medley3.5>working-medley>sources>ADIR.;13)
+      :PREVIOUS-DATE "23-May-2022 12:02:10" {DSK}<home>larry>ilisp>medley>ADIR.;1)
 
 
 (* ; "
-Copyright (c) 1981-1988, 1990-1992, 1920, 2017, 2020-2021 by Venue & Xerox Corporation.
+Copyright (c) 1981-1988, 1990-1992 by Venue & Xerox Corporation.
 ")
 
 (PRETTYCOMPRINT ADIRCOMS)
@@ -1120,12 +1118,12 @@ Copyright (c) 1981-1988, 1990-1992, 1920, 2017, 2020-2021 by Venue & Xerox Corpo
     HERALDSTRING])
 
 (INTERPRET.REM.CM
-  [LAMBDA (RETFLG)                                     (* ; "Edited 15-Mar-2021 12:27 by larry")
-    (DECLARE (GLOBALVARS STARTUPFORM))
+  [LAMBDA (RETFLG)                                           (* ; "Edited 31-Oct-2022 16:44 by lmm")
+                                                             (* ; "Edited 15-Mar-2021 12:27 by lmm")
 
-(* ;;; "Looks at REM.CM and evaluates the form there if the first character of the file is open paren or doublequote.  If it's a string, it will be unread,, else the form will be evaluated at the next prompt.  For use in INIT.LISP, among others.  If RETFLG is true, the expression read is simply returned")
+    (* ;; " this used to look at 'rem.cm' from the Alto exec; later it was changed to look for an environment variable %"MEDLEYLOADUP%" which is just set during loadups and not shared with the %"greet%"")
 
-    (PROG ((FILE (UNIX-GETENV "LDEINIT"))
+    (PROG ((FILE (UNIX-GETENV "MEDLEYLOADUP"))
            COM)
           (OR FILE (RETURN))
           (SETQ FILE (OPENSTREAM FILE 'INPUT))
@@ -1140,11 +1138,10 @@ Copyright (c) 1981-1988, 1990-1992, 1920, 2017, 2020-2021 by Venue & Xerox Corpo
                  (RETFLG                                     (* ; "Save it to return"))
                  (T                                          (* ; "Unread a string")
                                                              (* ; 
-                                   "RMK: Replace CR and LF by space to avoid EOL convention issues")
-                    (for I from 1 to (NCHARS COM)
-                       when (FMEMB (NTHCHARCODE COM I)
-                                       (CHARCODE (CR LF EOL))) do (RPLCHARCODE COM I (CHARCODE
-                                                                                          EOL)))
+                                     "RMK: Replace CR and LF by space to avoid EOL convention issues")
+                    (for I from 1 to (NCHARS COM) when (FMEMB (NTHCHARCODE COM I)
+                                                              (CHARCODE (CR LF EOL)))
+                       do (RPLCHARCODE COM I (CHARCODE EOL)))
                     (BKSYSBUF COM]
              (T (CLOSEF FILE)))
           (RETURN (COND
@@ -1224,16 +1221,16 @@ Copyright (c) 1981-1988, 1990-1992, 1920, 2017, 2020-2021 by Venue & Xerox Corpo
 (ADDTOVAR LAMA PACKFILENAME.STRING PACKFILENAME)
 )
 (PUTPROPS ADIR COPYRIGHT ("Venue & Xerox Corporation" 1981 1982 1983 1984 1985 1986 1987 1988 1990 
-1991 1992 1920 2017 2020 2021))
+1991 1992))
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (3179 14304 (DELFILE 3189 . 3350) (FULLNAME 3352 . 3719) (INFILE 3721 . 3869) (INFILEP 
-3871 . 4006) (IOFILE 4008 . 4148) (OPENFILE 4150 . 4550) (OPENSTREAM 4552 . 8892) (OUTFILE 8894 . 9045
-) (OUTFILEP 9047 . 9183) (RENAMEFILE 9185 . 9491) (SIMPLE.FINDFILE 9493 . 9903) (VMEMSIZE 9905 . 10072
-) (\COPYSYS 10074 . 13023) (\FLUSHVM 13025 . 14097) (\LOGOUT0 14099 . 14302)) (14676 36581 (
-UNPACKFILENAME.STRING 14686 . 33960) (\UPF.DIRECTORY 33962 . 36579)) (38109 40781 (UNPACKFILENAME 
-38119 . 38305) (LASTCHPOS 38307 . 39001) (FILENAMEFIELD 39003 . 39488) (FILENAMEFIELD.STRING 39490 . 
-40069) (PACKFILENAME 40071 . 40414) (PACKFILENAME.STRING 40416 . 40779)) (55251 56164 (
-FILEDIRCASEARRAY 55261 . 56162)) (56331 63511 (LOGOUT 56341 . 57258) (MAKESYS 57260 . 58889) (SYSOUT 
-58891 . 60443) (SAVEVM 60445 . 61245) (HERALD 61247 . 61407) (INTERPRET.REM.CM 61409 . 63134) (
-\USEREVENT 63136 . 63509)) (63693 65420 (USERNAME 63703 . 64659) (SETUSERNAME 64661 . 65418)))))
+  (FILEMAP (NIL (3066 14191 (DELFILE 3076 . 3237) (FULLNAME 3239 . 3606) (INFILE 3608 . 3756) (INFILEP 
+3758 . 3893) (IOFILE 3895 . 4035) (OPENFILE 4037 . 4437) (OPENSTREAM 4439 . 8779) (OUTFILE 8781 . 8932
+) (OUTFILEP 8934 . 9070) (RENAMEFILE 9072 . 9378) (SIMPLE.FINDFILE 9380 . 9790) (VMEMSIZE 9792 . 9959)
+ (\COPYSYS 9961 . 12910) (\FLUSHVM 12912 . 13984) (\LOGOUT0 13986 . 14189)) (14563 36468 (
+UNPACKFILENAME.STRING 14573 . 33847) (\UPF.DIRECTORY 33849 . 36466)) (37996 40668 (UNPACKFILENAME 
+38006 . 38192) (LASTCHPOS 38194 . 38888) (FILENAMEFIELD 38890 . 39375) (FILENAMEFIELD.STRING 39377 . 
+39956) (PACKFILENAME 39958 . 40301) (PACKFILENAME.STRING 40303 . 40666)) (55138 56051 (
+FILEDIRCASEARRAY 55148 . 56049)) (56218 63306 (LOGOUT 56228 . 57145) (MAKESYS 57147 . 58776) (SYSOUT 
+58778 . 60330) (SAVEVM 60332 . 61132) (HERALD 61134 . 61294) (INTERPRET.REM.CM 61296 . 62929) (
+\USEREVENT 62931 . 63304)) (63488 65215 (USERNAME 63498 . 64454) (SETUSERNAME 64456 . 65213)))))
 STOP

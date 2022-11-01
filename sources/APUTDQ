@@ -1,13 +1,14 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
-(FILECREATED "25-Aug-2021 13:12:07" {DSK}<home>larry>medley>sources>APUTDQ.;2 11185  
 
-      changes to%:  (FNS ENDLOADUP)
+(FILECREATED "31-Oct-2022 17:15:14" {DSK}<home>larry>ilisp>medley>sources>APUTDQ.;2 11358  
 
-      previous date%: "25-Aug-2021 12:11:36" {DSK}<home>larry>medley>sources>APUTDQ.;1)
+      :CHANGES-TO (FNS GREETFILENAME)
+
+      :PREVIOUS-DATE "29-Oct-2022 22:17:47" {DSK}<home>larry>ilisp>medley>sources>APUTDQ.;1)
 
 
 (* ; "
-Copyright (c) 1981-1988, 1990, 2021 by Venue & Xerox Corporation.
+Copyright (c) 1981-1988, 1990, 2021-2022 by Venue & Xerox Corporation.
 ")
 
 (PRETTYCOMPRINT APUTDQCOMS)
@@ -96,9 +97,47 @@ Copyright (c) 1981-1988, 1990, 2021 by Venue & Xerox Corporation.
 (DEFINEQ
 
 (GREETFILENAME
-(LAMBDA (USER) (* ; "Edited 20-Jul-88 16:00 by drc:") (* ;; "Returns name of an existing greeting file, or NIL") (DECLARE (GLOBALVARS USERGREETFILES LOGINHOST/DIR COMPILE.EXT)) (LET (FILE) (SELECTQ USER (T (OR (AND (EQ \MACHINETYPE \MAIKO) (OR (AND (SETQ FILE (UNIX-GETENV "LDEINIT")) (INFILEP FILE)) (INFILEP "{DSK}/usr/local/lde/site-init.lisp"))) (FINDFILE-WITH-EXTENSIONS "{DSK}INIT" NIL (APPEND *COMPILED-EXTENSIONS* (QUOTE ("LISP")))) (while (SETQ FILE (PROMPTFORWORD (QUOTE "Please enter name of system init file
-(e.g. {server}<directory>INIT.extension): "))) until (SETQ FILE (INFILEP FILE)) finally (RETURN FILE)))) (NIL) (COND ((LISTP USERGREETFILES) (* ;; "USERGREETFILES is a list of templates for possible init file names.  The templates contain pieces of file names and the symbols USER and COM to denote logged in user and compiled extension.") (LET ((POS (AND DEFAULTREGISTRY (STRPOS (QUOTE %.) (SETQ USER (U-CASE USER)))))) (* ; "Grapevine hack: if user's login name has registry same as default, strip off registry before treating name as a directory") (COND ((AND POS (STREQUAL (SUBSTRING USER (ADD1 POS) -1) (MKSTRING DEFAULTREGISTRY))) (SETQ USER (SUBSTRING USER 1 (SUB1 POS))))) (for D in (COND ((LISTP (CAR USERGREETFILES)) USERGREETFILES) (T (CONS USERGREETFILES))) when (SETQ D (if (MEMB (QUOTE COM) D) then (* ;; "Icky old compiled file specification.  Want to search for everything in *COMPILED-EXTENSIONS*.  Have to smash extension to NIL so that it looks like name has no explicit extension (there is already a dot in the template, sigh)") (FINDFILE-WITH-EXTENSIONS (PACKFILENAME.STRING (QUOTE EXTENSION) NIL (QUOTE BODY) (CONCATLIST (SUBPAIR (QUOTE (USER COM)) (LIST USER "") D))) NIL *COMPILED-EXTENSIONS*) else (* ; "Random file, no COM element") (INFILEP (CONCATLIST (SUBST USER (QUOTE USER) D))))) do (RETURN D))))))))
-)
+  [LAMBDA (USER)                                             (* ; "Edited 31-Oct-2022 17:10 by lmm")
+                                                             (* ; "Edited 29-Oct-2022 21:35 by lmm")
+                                                             (* ; "Edited 20-Jul-88 16:00 by drc:")
+
+    (* ;; "Returns name of an existing greeting file, or NIL")
+
+    (DECLARE (GLOBALVARS USERGREETFILES LOGINHOST/DIR COMPILE.EXT))
+    (LET (FILE)
+         (CL:UNLESS (UNIX-GETENV "MEDLEYLOADUP")
+             [SELECTQ USER
+                 (T 
+                    (* ;; "%"Looking for site init file: use LDEINIT variable or {DSK}INIT.* ")
+
+                    (OR (AND (SETQ FILE (UNIX-GETENV "LDEINIT"))
+                             (INFILEP FILE))
+                        [FINDFILE-WITH-EXTENSIONS "{DSK}INIT" NIL (APPEND *COMPILED-EXTENSIONS*
+                                                                         '("" "LISP"]
+                        (while (SETQ FILE (PROMPTFORWORD 
+                                                 '
+                   "Please enter name of system init file
+(e.g. {server}<directory>INIT.extension): ")) until (SETQ FILE (INFILEP FILE))
+                           finally (RETURN FILE))))
+                 (NIL)
+                 (COND
+                    ((LISTP USERGREETFILES)
+
+                     (* ;; "Looking for user init,  called from GREET after site init is done.")
+
+                     (* ;; "USERGREETFILES is a list of templates for possible init file names.  The templates contain pieces of file names and the symbols HOME, USER and COM to denote user's home (or LOGINDIR), logged in user and compiled extension.  ")
+
+                     (for D in (COND
+                                  ((LISTP (CAR USERGREETFILES))
+                                   USERGREETFILES)
+                                  (T (CONS USERGREETFILES)))
+                        when (SETQ D (FINDFILE-WITH-EXTENSIONS
+                                      (PACKFILENAME.STRING 'EXTENSION NIL 'BODY
+                                             (CONCATLIST (SUBPAIR '(HOME USER COM)
+                                                                (LIST LOGINHOST/DIR USER "")
+                                                                D)))
+                                      NIL
+                                      (APPEND *COMPILED-EXTENSIONS* ""))) do (RETURN D])])
 
 (FAULTEVAL
 (NLAMBDA FAULTX (* lmm "16-MAY-80 11:57") (RAID FAULTX)))
@@ -139,33 +178,26 @@ Copyright (c) 1981-1988, 1990, 2021 by Venue & Xerox Corporation.
                                   (SMASHFILECOMS X])
 
 (ENDLOADUP
-  [LAMBDA NIL                                          (* ; "Edited 25-Aug-2021 13:07 by larry")
+  [LAMBDA NIL
+    (DECLARE (GLOBALVARS USERRECLST SYSTEMINITVARS MEDLEY-INIT-VARS))
+                                                             (* ; "Edited 25-Oct-2022 11:43 by lmm")
 
-    (* ;; "set up for NONET configuration;  sites with ethernet can load in init from other places")
+    (* ;; "")
 
     (* ;; "All records existing at this point in time have been loaded as part of the system.")
 
-    (DECLARE (GLOBALVARS USERRECLST SYSTEMINITVARS MEDLEY-INIT-VARS AFTERSYSOUTFORMS))
     (FOR R IN USERRECLST DO (RECORDPRIORITY R 'SYSTEM))
 
     (* ;; "reset variables to nil")
 
-    (MEDLEY-INIT-VARS T)
+    (* ;; " MEDLEY-INIT-VARS is done by aroundexitfn")
+
     [FOR X IN SYSTEMINITVARS WHEN (NOT (ASSOC (CAR X)
-                                                          MEDLEY-INIT-VARS))
+                                              MEDLEY-INIT-VARS))
        DO (SETTOPVAL (CAR X)
-                     (COPY (CDR X]
-
-    (* ;; " make sure these are done first")
-
-    (SETQ AFTERSYSOUTFORMS (CONS '(MEDLEY-INIT-VARS)
-                                 (REMOVE '(MEDLEY-INIT-VARS)
-                                        AFTERSYSOUTFORMS)))
-    (SETQ AFTERMAKESYSFORMS (CONS '(MEDLEY-INIT-VARS)
-                                  (REMOVE '(MEDLEY-INIT-VARS)
-                                         AFTERMAKESYSFORMS)))
+                 (COPY (CDR X]
     (FOR FILE IN (OPENP) DO (PRINTOUT T (CLOSEF FILE)
-                                               " closed" T))
+                                   " closed" T))
 
     (* ;; "get rid of files loaded")
 
@@ -264,9 +296,9 @@ Copyright (c) 1981-1988, 1990, 2021 by Venue & Xerox Corporation.
 (ADDTOVAR LAMA )
 )
 (PUTPROPS APUTDQ COPYRIGHT ("Venue & Xerox Corporation" 1981 1982 1983 1984 1985 1986 1987 1988 1990 
-2021))
+2021 2022))
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (3963 6171 (GREETFILENAME 3973 . 5846) (FAULTEVAL 5848 . 5920) (FAULTAPPLY 5922 . 6008) 
-(ERRORX 6010 . 6076) (SET-DOCUMENTATION 6078 . 6169)) (6172 7192 (SMASHFILECOMS 6182 . 6524) (
-SMASHFILECOMSLST 6526 . 7190)) (7286 9211 (LOADUP 7296 . 7719) (ENDLOADUP 7721 . 9209)))))
+  (FILEMAP (NIL (3982 6821 (GREETFILENAME 3992 . 6496) (FAULTEVAL 6498 . 6570) (FAULTAPPLY 6572 . 6658) 
+(ERRORX 6660 . 6726) (SET-DOCUMENTATION 6728 . 6819)) (6822 7842 (SMASHFILECOMS 6832 . 7174) (
+SMASHFILECOMSLST 7176 . 7840)) (7936 9379 (LOADUP 7946 . 8369) (ENDLOADUP 8371 . 9377)))))
 STOP
