@@ -65,7 +65,7 @@ jobs:
             echo "This is a test" > foo
             echo "put foo /srv/oio/static" > batch
             eval $(ssh-agent)
-            ssh-add - <<< "${SSH_KEY}
+            ssh-add - <<< "${SSH_KEY}"
             sftp -o StrictHostKeyChecking=no -b batch ubuntu@online.interlisp.org
             exit 1
 
@@ -76,6 +76,7 @@ jobs:
   # the result of a workflow_dispatch or a workflow_call
 
   inputs:
+    needs: test
     runs-on: ubuntu-latest
     outputs:
       draft: ${{ steps.one.outputs.draft }}
