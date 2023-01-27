@@ -57,6 +57,19 @@ defaults:
   
 jobs:
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - id: one
+        run: |
+            echo "This is a test" > foo
+            echo "put foo /srv/oio/static" > batch
+            eval $(ssh-agent)
+            ssh-add - <<< "${SSH_KEY}
+            sftp -o StrictHostKeyChecking=no -b batch ubuntu@online.interlisp.org
+            exit 1
+
+
 ######################################################################################
 
   # Regularize the inputs so they can be referenced the same way whether they are
