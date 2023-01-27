@@ -68,7 +68,8 @@ jobs:
             ssh-add - <<< "${SSH_KEY}"
             sftp -o StrictHostKeyChecking=no -b batch ubuntu@online.interlisp.org
             exit 1
-
+        env:
+            SSH_KEY: ${{ secrets.OIO_SSH_KEY }}
 
 ######################################################################################
 
