@@ -1,33 +1,35 @@
 (DEFINE-FILE-INFO PACKAGE "INTERLISP" READTABLE "INTERLISP" BASE 10)
 
-(FILECREATED "11-Aug-2022 17:53:58" {DSK}<home>larry>medley>lispusers>PICK.;3 4261   
+(FILECREATED " 3-Feb-2023 13:17:58" {DSK}<home>larry>il>medley>lispusers>PICK.;10 7424   
 
-      :CHANGES-TO (VARS PICKCOMS)
-                  (FNS PICK)
+      :CHANGES-TO (FNS PICK)
 
-      :PREVIOUS-DATE "10-Aug-2022 16:57:49" {DSK}<home>larry>medley>lispusers>PICK.;1)
+      :PREVIOUS-DATE " 3-Feb-2023 10:27:14" {DSK}<home>larry>il>medley>lispusers>PICK.;9)
 
 
 (PRETTYCOMPRINT PICKCOMS)
 
 (RPAQQ PICKCOMS ((COMMANDS "pick")
-                 (DECLARE%: EVAL@COMPILE DONTCOPY (FILES (LOADCOP)
-                                                         GITFNS))
                  (FILES GITFNS)
-                 (FNS PICK)))
+                 (DECLARE%: EVAL@COMPILE DONTCOPY (FILES (LOADCOMP)
+                                                         GITFNS))
+                 (FNS PICK)
+                 (VARS MEDLEY-DEMO-TOPICS)))
 
 (DEFCOMMAND "pick" (FIRST . REST) (PICK FIRST REST))
-(DECLARE%: EVAL@COMPILE DONTCOPY 
-
-(FILESLOAD (LOADCOP)
-       GITFNS)
-)
 
 (FILESLOAD GITFNS)
+(DECLARE%: EVAL@COMPILE DONTCOPY 
+
+(FILESLOAD (LOADCOMP)
+       GITFNS)
+)
 (DEFINEQ
 
 (PICK
-  [LAMBDA (TYPE CHOICES)                                     (* ; "Edited 11-Aug-2022 17:15 by lmm")
+  [LAMBDA (TYPE CHOICES)                                     (* ; "Edited  3-Feb-2023 13:16 by lmm")
+                                                             (* ; "Edited 18-Jan-2023 13:26 by lmm")
+                                                             (* ; "Edited 11-Aug-2022 17:15 by lmm")
                                                              (* ; "Edited 10-Aug-2022 16:57 by lmm")
     (SELECTQ (MKATOM (U-CASE (MKSTRING TYPE)))
         (ONEOF                                               (* ; 
@@ -35,7 +37,10 @@
                [CAR (NTH CHOICES (RAND 1 (LENGTH CHOICES])
         (NIL                                                 (* ; 
                                                          "pick -- choose an issue, a file, a project")
-             [PICK (PICK 'ONEOF '(FILE ISSUE PROJECT])
+             [PICK (PICK 'ONEOF '(DEMO FILE ISSUE PROJECT])
+        (DEMO [PICK 'ONEOF (OR CHOICES (FOR X IN MEDLEY-DEMO-TOPICS
+                                          JOIN (FOR Y IN (CDR X) COLLECT (LIST (CAR X)
+                                                                               Y])
         (ISSUE                                               (* ; 
                        "pick issue [number] -- display an issue; if none given, choose one at random")
                (LET ([ISSUE (PICK 'ONEOF (OR CHOICES (GIT-COMMAND 
@@ -78,10 +83,46 @@
         (PROJECT 
                  (* ;; "pick PROJECT will choose some repo to work on")
 
-                 [PICK 'ONEOF (PICK 'ONEOF (LIST (MAPCAR GIT-PROJECTS #'CAR)
-                                                 '(CLOS ROOMS ONLINE WEBSITE COMMUNITY ENVOS])
+                 [PICK 'ONEOF (UNION (REMOVE 'MEDLEY (MAPCAR GIT-PROJECTS #'CAR))
+                                     '(CLOS ROOMS ONLINE WEBSITE COMMUNITY ENVOS])
         (HELP TYPE "Unknown type"])
 )
+
+(RPAQQ MEDLEY-DEMO-TOPICS
+       (("Tour of Web site" "Who Are We?" "What we're trying to accomplish" "Bibliography" 
+               "Interlisp History" "Documentation" "Listing files" "GitHub repo")
+        ("Who are we?" "some original and early developers" 
+               "GitHub organization: https://github.com/Interlisp (watch GitHub postings) " 
+               "Weekly Zoom meeting attendees" "Watch Github Issues" 
+               "Mailing lists (github vs email?)" "Interlisp.Org 501(c)3 Non-profit (donations)" 
+               "Partners: Software Preservation Network, SHFT group at CSUCI")
+        ("What are we trying to accomplish?" "Other Lisp implementors looking for ideas" 
+               "Software historians using emulation presrve software" 
+               "Use Medley as a CL learning tool or development" 
+               "Vintage computing, like restoring a vintage car" 
+               "Part of a virtual museum collection" "Reaching escape velocity")
+        ("File package/manager" "(FILES?), MAKEFILES, CLEANUP, SHOWDEF, COMPAREDEFS, CSBROWSER")
+        ("Interlisp 70s" "ADVISE" "History List: ??, Redo, Retry, Fix" "UNDO" 
+               " BREAK, ?=, BT!, OK, PROCEED" " TRACE" " HELPSYS (MAN, dinfo)" "inspect")
+        ("Programmers Assistant" "DWIM" " Spelling Correction " " Permissive parameters " " CUTEFLG "
+               " CLISP (Conversational Lisp)")
+        ("80s Interlisp Features" " Spy" " Sedit structure editor " " File browser " 
+               " TEdit WYSIWYG formatted text " " Sketch (line art)")
+        (" Common Lisp integration " " Packages CL and IL" " ReadTables XCL and INTERLISP " 
+               " *PRINT-CASE* :DOWNCASE " " Using cl when unless instead of COND)")
+        (" GitHub repositories " " Medley / maiko / history / web site ")
+        ("Git (hub)integration" " Issues " " PRC ")
+        ("system Architecture " " Maiko, Virtual Machines, Opcodes, InspectCode ")
+        (" Rooms Demo (clip from NYC talk)" " Arun Welch ")
+        (" CLOS demo (clip from NYC talk)" "Arun Welch")
+        (" Lexical Functional Grammar (LFG) Demo " "clip from NYC talk?)")
+        ("tested ports" "macOS (Silicon, x86_64, 386, Power PC)" 
+               "64-bit Linux x86_64 and Arm64 (Raspberry Pi)" "Uses X or SDL or VNC gateway" 
+               "C standards (originally written for K&R)" "Big-endian vs, little-endian, 32->64 bit"
+               "file system Y2K")
+        ("Versioned file system" "{device}<root>directories vs GitHub, relative paths" 
+               "Text encodings EOL, XCCS (before Unicode)")
+        ("Partner organizations" "SPN" "CHM" "Smalltalk Foundation" "Interlisp.org 501(c)3")))
 (DECLARE%: DONTCOPY
-  (FILEMAP (NIL (735 4238 (PICK 745 . 4236)))))
+  (FILEMAP (NIL (753 4734 (PICK 763 . 4732)))))
 STOP
